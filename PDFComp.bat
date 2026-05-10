@@ -2,10 +2,10 @@
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
-:: ========================================
+:: ================================================
 :: PDFComp - PDF圧縮ツール
 :: Ghostscriptを使ってPDFファイルを圧縮する
-:: ========================================
+:: ================================================
 
 echo ================================================
 echo   PDFComp - PDF圧縮ツール
@@ -22,36 +22,26 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: --- ドラッグ&ドロップでファイルが渡された場合はそれを使う ---
-if not "%~1"=="" (
-    :: コマンドライン引数（ドラッグ&ドロップ）からファイルリストを構築
-    set "USE_ARGS=1"
-) else (
-    set "USE_ARGS=0"
-)
-
 :: --- 圧縮品質の選択 ---
 echo 圧縮品質を選んでください:
 echo;
-echo   [1] screen  - 最高圧縮 (72 dpi、ファイルサイズ最小、画質低め)
-echo   [2] ebook   - 標準圧縮 (150 dpi、バランス重視)  ← デフォルト
-echo   [3] printer - 低圧縮   (300 dpi、印刷向け、画質高め)
-echo   [4] prepress- 最低圧縮 (300 dpi+、印刷業者向け、画質最高)
+echo   [1] screen  - 最高圧縮 ^(72 dpi、ファイルサイズ最小、画質低め^)
+echo   [2] ebook   - 標準圧縮 ^(150 dpi、バランス重視^)  <- デフォルト
+echo   [3] printer - 低圧縮   ^(300 dpi、印刷向け、画質高め^)
+echo   [4] prepress- 最低圧縮 ^(300 dpi+、印刷業者向け、画質最高^)
 echo;
 set /p "QUALITY_INPUT=番号を入力してEnter (空Enterで2を選択): "
 
-:: 入力に応じてGhostscriptのPDFSETTINGSパラメータを設定
-if "%QUALITY_INPUT%"=="1" (
+if "!QUALITY_INPUT!"=="1" (
     set "QUALITY=screen"
     set "QUALITY_NAME=最高圧縮 (screen)"
-) else if "%QUALITY_INPUT%"=="3" (
+) else if "!QUALITY_INPUT!"=="3" (
     set "QUALITY=printer"
     set "QUALITY_NAME=低圧縮 (printer)"
-) else if "%QUALITY_INPUT%"=="4" (
+) else if "!QUALITY_INPUT!"=="4" (
     set "QUALITY=prepress"
     set "QUALITY_NAME=最低圧縮 (prepress)"
 ) else (
-    :: 未入力またはその他はデフォルトのebookを使用
     set "QUALITY=ebook"
     set "QUALITY_NAME=標準圧縮 (ebook)"
 )
@@ -64,65 +54,51 @@ echo;
 set "SUCCESS_COUNT=0"
 set "FAIL_COUNT=0"
 
-:: ==========================================
-:: ドラッグ&ドロップの場合: 引数ループで処理
-:: ==========================================
-if "%USE_ARGS%"=="1" (
-    echo ドラッグ&ドロップされたファイルを処理します...
-    echo;
-    :arg_loop
-        if "%~1"=="" goto arg_done
-        call :process_file "%~1"
-        shift
-        goto arg_loop
-    :arg_done
-    goto show_summary
-)
+:: --- ドラッグ&ドロップ or コマンドライン引数がある場合はそちらへ ---
+:: ※ ラベルはifブロックの外に置く必要があるため goto で分岐
+if not "%~1"=="" goto use_args
 
 :: ==========================================
-:: 通常起動の場合: ファイル選択ダイアログ
+:: 通常起動: ファイル選択ダイアログ (複数選択可能)
 :: ==========================================
-
-:: PowerShellでOpenFileDialogを表示（複数選択可能）
 echo ファイル選択ダイアログを開きます...
-echo (Ctrlキーを押しながら選択すると複数ファイルを一括処理できます)
+echo ^(Ctrlキーを押しながら選択すると複数ファイルを一括処理できます^)
 echo;
 
-:: 一時ファイルにPowerShellの出力を書き込む
-set "TMPFILE=%TEMP%\pdfcomp_list_%RANDOM%.txt"
+:: 一時ファイルにファイルリストを書き出す
+:: -Encoding Default (ANSI) でBOMなしにする (UTF8はBOM付きで文字化けするため)
+set "TMPFILE=%TEMP%\pdfcomp_%RANDOM%.txt"
 
-powershell -NoProfile -Command ^
-    "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null;" ^
-    "$dlg = New-Object System.Windows.Forms.OpenFileDialog;" ^
-    "$dlg.Filter = 'PDF Files (*.pdf)|*.pdf';" ^
-    "$dlg.Multiselect = $true;" ^
-    "$dlg.Title = 'PDFファイルを選択 (複数選択可能)';" ^
-    "$dlg.ShowDialog() | Out-Null;" ^
-    "$dlg.FileNames | Out-File -FilePath '%TMPFILE%' -Encoding UTF8"
+powershell -NoProfile -Command "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null; $dlg = New-Object System.Windows.Forms.OpenFileDialog; $dlg.Filter = 'PDF Files (*.pdf)|*.pdf'; $dlg.Multiselect = $true; $dlg.Title = 'PDFファイルを選択 (複数選択可能)'; $dlg.ShowDialog() | Out-Null; $dlg.FileNames | Out-File -FilePath '%TMPFILE%' -Encoding Default"
 
-:: 一時ファイルが空またはファイル未選択の場合は終了
+:: 一時ファイルがなければキャンセルされたとみなす
 if not exist "%TMPFILE%" (
     echo [情報] ファイルが選択されませんでした。
     pause
     exit /b 0
 )
 
-:: 一時ファイルを読み込んで各ファイルを処理
+:: 一時ファイルを1行ずつ読み込んで処理
 for /f "usebackq delims=" %%F in ("%TMPFILE%") do (
-    set "LINE=%%F"
-    :: 空行スキップ
-    if not "!LINE!"=="" (
-        call :process_file "!LINE!"
-    )
+    if not "%%F"=="" call :process_file "%%F"
 )
 
-:: 一時ファイルを削除
 del "%TMPFILE%" 2>nul
+goto show_summary
 
+:: ==========================================
+:: ドラッグ&ドロップ: 引数を順番に処理するループ
+:: ※ ラベルはifブロックの外でないと機能しないため main フローに配置
+:: ==========================================
+:use_args
+call :process_file "%~1"
+shift
+if not "%~1"=="" goto use_args
+
+:: ==========================================
+:: 処理結果のサマリー表示
+:: ==========================================
 :show_summary
-:: ==========================================
-:: 処理結果のサマリーを表示
-:: ==========================================
 echo;
 echo ================================================
 echo   処理完了
@@ -147,67 +123,53 @@ exit /b 0
         exit /b 1
     )
 
-    :: 拡張子チェック（PDFのみ受け付ける）
-    set "EXT=%~x1"
-    if /i not "!EXT!"==".pdf" (
+    :: 拡張子チェック (PDFのみ受け付ける)
+    if /i not "%~x1"==".pdf" (
         echo [スキップ] PDFファイルではありません: !FILEPATH!
         set /a FAIL_COUNT+=1
         exit /b 1
     )
 
-    :: 元ファイルのディレクトリ・ファイル名を取得
+    :: 元ファイルのディレクトリとファイル名を取得
     set "DIRPATH=%~dp1"
     set "BASENAME=%~n1"
 
-    :: 出力ファイルパスを元ファイルと同じディレクトリに設定
+    :: 出力パスを元ファイルと同じディレクトリに設定 (元のコードのバグを修正)
     set "OUTPUTPATH=!DIRPATH!compressed_!BASENAME!.pdf"
-
-    :: 同名の出力ファイルが既に存在する場合は番号を付ける
     set "SUFFIX=0"
+
+    :: 同名出力ファイルが既に存在する場合は連番を付けて回避
+    :: ※ call内でのgotoはcallのスタックを保持したまま動作するため正常に戻れる
     :check_exist
-        if exist "!OUTPUTPATH!" (
-            set /a SUFFIX+=1
-            set "OUTPUTPATH=!DIRPATH!compressed_!BASENAME!_!SUFFIX!.pdf"
-            goto check_exist
-        )
+    if exist "!OUTPUTPATH!" (
+        set /a SUFFIX+=1
+        set "OUTPUTPATH=!DIRPATH!compressed_!BASENAME!_!SUFFIX!.pdf"
+        goto check_exist
+    )
 
     echo ----------------------------------------
     echo 処理中: !BASENAME!.pdf
     echo 出力先: !OUTPUTPATH!
     echo;
 
-    :: Ghostscriptで圧縮実行
-    gswin64c -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 ^
-        -dPDFSETTINGS=/!QUALITY! ^
-        -dNOPAUSE -dBATCH -dQUIET ^
-        -sOutputFile="!OUTPUTPATH!" "!FILEPATH!"
+    :: Ghostscriptで圧縮実行 (引数は1行にまとめる。^改行は引数の途中で誤動作する場合があるため)
+    gswin64c -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/!QUALITY! -dNOPAUSE -dBATCH -dQUIET -sOutputFile="!OUTPUTPATH!" "!FILEPATH!"
 
-    :: Ghostscriptのエラーチェック
     if errorlevel 1 (
         echo [エラー] 圧縮に失敗しました: !BASENAME!.pdf
         set /a FAIL_COUNT+=1
         exit /b 1
     )
 
-    :: 出力ファイルの存在確認
     if not exist "!OUTPUTPATH!" (
         echo [エラー] 出力ファイルが生成されませんでした: !BASENAME!.pdf
         set /a FAIL_COUNT+=1
         exit /b 1
     )
 
-    :: 圧縮前後のファイルサイズと削減率をPowerShellで計算・表示
-    powershell -NoProfile -Command ^
-        "$src  = (Get-Item '!FILEPATH!').Length;" ^
-        "$dst  = (Get-Item '!OUTPUTPATH!').Length;" ^
-        "$ratio = [math]::Round((1 - $dst / $src) * 100, 1);" ^
-        "Write-Host ('  圧縮前: ' + [math]::Round($src/1MB,2) + ' MB');" ^
-        "Write-Host ('  圧縮後: ' + [math]::Round($dst/1MB,2) + ' MB');" ^
-        "if ($ratio -gt 0) {" ^
-        "    Write-Host ('  削減率: ' + $ratio + '%% 削減') -ForegroundColor Green" ^
-        "} else {" ^
-        "    Write-Host ('  ※ ファイルが大きくなりました (' + [math]::Abs($ratio) + '%% 増加)。元ファイルの方が小さいため、元ファイルを使うことを推奨します。') -ForegroundColor Yellow" ^
-        "}"
+    :: 圧縮前後のサイズと削減率をPowerShellで計算・表示
+    :: %%はバッチ内でのエスケープ。実行時に%に変換される
+    powershell -NoProfile -Command "$src=(Get-Item '!FILEPATH!').Length; $dst=(Get-Item '!OUTPUTPATH!').Length; $ratio=[math]::Round((1-$dst/$src)*100,1); Write-Host ('  圧縮前: '+[math]::Round($src/1MB,2)+' MB'); Write-Host ('  圧縮後: '+[math]::Round($dst/1MB,2)+' MB'); if($ratio -gt 0){Write-Host ('  削減率: '+$ratio+'%% 削減') -ForegroundColor Green}else{Write-Host ('  ※ファイルが大きくなりました ('+[math]::Abs($ratio)+'%% 増加)。元のファイルの使用を推奨します。') -ForegroundColor Yellow}"
 
     echo;
     set /a SUCCESS_COUNT+=1
