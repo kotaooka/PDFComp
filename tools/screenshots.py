@@ -4,7 +4,7 @@
 #   python -m http.server 8765   （リポジトリのルートで起動しておく）
 #   python tools/screenshots.py FONT_DIR PDF1 PDF2 ...
 # 画面と同じ字体（BIZ UDPGothic・IBM Plex Mono）で撮るため、Google Fonts への要求を手元のフォントで返す。
-# PDF は任意（撮影に使ったのは、スキャンした書類・写真の多い報告書・文字だけの一覧の 3 種類）
+# PDF は任意（撮影に使ったのは、スキャンした書類と文字だけの一覧の 2 種類）
 import sys, re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
