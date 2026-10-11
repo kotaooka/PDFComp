@@ -1,8 +1,11 @@
 // PDF圧縮の Service Worker
 // 公開ファイルを更新したら VERSION を上げる。古いキャッシュは activate 時に削除される
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.1.0';
 const APP_CACHE = `pdfcomp-${VERSION}`;
 const FONT_CACHE = 'pdfcomp-fonts';
+// 圧縮エンジンは別のキャッシュに置き、VERSION を上げても消さない（15 MB を毎回読み直させないため）。
+// エンジン（vendor/ghostpdl-wasm）を入れ替えたときだけ、この名前を変える
+const ENGINE_CACHE = 'pdfcomp-engine-ghostpdl-wasm-1.1.0';
 
 // オフラインで動かすために事前に保存するファイル
 // 圧縮エンジン（gs.wasm、約 15 MB）はここに入れず、最初に使ったときに保存する（見るだけの人に読ませないため）
@@ -30,7 +33,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k.startsWith('pdfcomp-') && k !== APP_CACHE && k !== FONT_CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k.startsWith('pdfcomp-') && k !== APP_CACHE && k !== FONT_CACHE && k !== ENGINE_CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -60,10 +63,10 @@ self.addEventListener('fetch', event => {
 
   if (url.origin !== self.location.origin) return;
 
-  // 圧縮エンジン（gs.wasm）: 大きいのでキャッシュを優先する。エンジンを更新したときは VERSION を上げて入れ替える
+  // 圧縮エンジン（gs.wasm）: 大きいのでキャッシュを優先する
   if (url.pathname.endsWith('/gs.wasm')) {
     event.respondWith(
-      caches.open(APP_CACHE).then(async c => {
+      caches.open(ENGINE_CACHE).then(async c => {
         const hit = await c.match(req, { ignoreSearch: true });
         if (hit) return hit;
         const res = await fetch(req);

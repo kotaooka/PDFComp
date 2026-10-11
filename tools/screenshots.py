@@ -38,7 +38,7 @@ def route_fonts(page):
 
 def idle(page):
     # すべてのファイルの処理が終わるまで待つ
-    page.wait_for_function("() => document.querySelectorAll('#files > li').length && ![...document.querySelectorAll('#files .badge')].some(b => /待機|圧縮中|読込/.test(b.textContent))", timeout=180000)
+    page.wait_for_function("() => document.querySelectorAll('#files > li').length && ![...document.querySelectorAll('#files .badge')].some(b => /待機|圧縮中|探索|読込/.test(b.textContent))", timeout=300000)
 
 
 with sync_playwright() as p:
@@ -60,5 +60,14 @@ with sync_playwright() as p:
     pg.locator('#cmpA').evaluate('v => { v.scrollTop = 300; v.scrollLeft = 150; }')
     pg.wait_for_timeout(300)
     pg.screenshot(path=str(OUT / 'compare.png'))
+    pg.click('#cmpClose')
+    # サイズの上限（1 MB）で圧縮し直す
+    pg.click('#modes button[data-mode="target"]')
+    pg.click('#targetChips button[data-mb="1"]')
+    pg.click('#rerunBtn')
+    pg.wait_for_timeout(500)
+    idle(pg)
+    pg.mouse.move(0, 0)
+    pg.screenshot(path=str(OUT / 'target.png'), full_page=True)
     b.close()
 print('docs/screenshots/ に保存しました')

@@ -33,14 +33,14 @@ legacy/PDFComp.bat         以前のバッチ版（Ghostscript のインスト�
 node tests/test.mjs     # Node 20 以降。失敗があれば終了コード 1
 ```
 
-テスト用の PDF はテスト内で組み立てます。同梱の Ghostscript を Node で動かして、圧縮・プリセットの大小関係・解像度指定・白黒化・画質確認用の描画・壊れたファイル・事前チェック・ZIP の構造を確かめます。
+テスト用の PDF はテスト内で組み立てます。同梱の Ghostscript を Node で動かして、圧縮・プリセットの大小関係・解像度指定（しきい値）・白黒化・上限サイズの探索・画質確認用の描画・壊れたファイル・事前チェック・ZIP の構造を確かめます。
 
 ## Ghostscript（WASM）の更新
 
 1. `npm pack @okathira/ghostpdl-wasm@<版>` で取得し、`package/dist/gs.js`・`gs.wasm` と `package/LICENSE` を `vendor/ghostpdl-wasm/` に置き換える
 2. `js/app.js` の `WASM_SIZE` を新しい `gs.wasm` のバイト数に合わせる（読み込みの進捗表示に使う）
 3. `index.html` の「解説」と README の版を直す
-4. `node tests/test.mjs` を通し、`sw.js` の `VERSION` を上げる
+4. `node tests/test.mjs` を通し、`sw.js` の `VERSION` と `ENGINE_CACHE` の名前を変える（エンジンは `VERSION` を上げても消えない別のキャッシュに入っているため）
 
 ビルドの由来は npm の Provenance（okathira/ghostpdl-wasm の GitHub Actions）で確かめられます。
 
@@ -51,6 +51,8 @@ node tests/test.mjs     # Node 20 以降。失敗があれば終了コード 1
 - **エラーの判定**：パスワード付きの PDF は終了コード 0 のまま `This file requires a password` を出すので、出力の文言で判定します（誤ったパスワードは `Password did not work`）
 - **画質確認の描画**：`png16m` で描きます。この WASM 版は、ページを帯に分けて描く方式（clist）で画像を拡大すると `memory access out of bounds` で停止するため、`-dMaxBitmap=1000000000` で帯分けを避けています（テストで再現と回避を確認）
 - **圧縮設定**：`-dPDFSETTINGS` を基本にし、詳細設定の解像度はカラー・グレーに同じ値、白黒 2 値に 2 倍（300〜1,200 dpi）を指定します。白黒化は `-sColorConversionStrategy=Gray -dProcessColorModel=/DeviceGray`
+- **縮小のしきい値**：解像度を指定するとき（詳細設定・上限サイズ）は `-d*ImageDownsampleThreshold=1.0` を付けます。Ghostscript の既定は 1.5 で、目標の 1.5 倍を超える画像しか縮小しないため、300 dpi のスキャンを 200 dpi 指定にしても縮みません。なお画像の解像度は縦横の小さいほうで判定されます
+- **上限サイズ**：`TARGET_LEVELS`（解像度と JPEG の QFactor の 11 段）を、最高画質を 1 回試したあと二分探索します（`searchTarget`、最大 5 回）。土台は `/ebook`、QFactor は `-c "<< /ColorACSImageDict … >> setdistillerparams" -f 入力` で渡します（AutoFilter が JPEG を選んだ画像に効く）。画質を下げるほど小さくなる前提ですが、縮小倍率が整数でない段で JPEG が縮みにくく逆転することがあるため、試した中で上限以下の最も高画質な結果を返します。元のファイルが上限以下なら圧縮しません
 - **確認済みの挙動**（Ghostscript 10.06.0）：しおり・リンク・文書情報は残る。AcroForm の入力欄は値ごと平坦化される。権限パスワードだけの PDF は制限なしで出力される。埋め込まれていない日本語フォントは代替フォントが埋め込まれ、見た目は保たれるが英数字のテキスト抽出が崩れることがある
 - **事前チェック**（`inspect`）：PDF の中身を文字列として探す目安です。`/Encrypt`（トレーラー）と `/ByteRange`（電子署名）は圧縮されない場所にあるので確実性が高く、`/AcroForm` はオブジェクトストリーム内にあると見落とします
 - **設定の保存**：ブラウザの localStorage（キー `pdfcomp-v1`）。表示テーマは QC Workbench 共通のキー `qc-workbench-theme`

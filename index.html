@@ -100,6 +100,13 @@ label.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
 .btn.small { font-size: .8rem; padding: 4px 10px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .desc { margin: 10px 0 0; font-size: .88rem; color: var(--ink2); }
+.seg.mode { margin-bottom: 14px; }
+.target-in { display: inline-flex; align-items: center; gap: 6px; }
+.target-in input { width: 7em; text-align: right; font-family: var(--f-num); font-size: 1rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-end; }
+.chips button { border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font: inherit; font-size: .82rem; font-family: var(--f-num); padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+.chips button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-weak); font-weight: 700; }
+.detail { grid-column: 1 / -1; font-size: .82rem; color: var(--ink2); }
 details.more { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
 details.more summary { cursor: pointer; font-size: .9rem; color: var(--ink2); }
 details.more .row { margin-top: 10px; }
@@ -207,13 +214,29 @@ footer a { color: inherit; }
 <main class="wrap">
   <section data-panel="main">
     <div class="box">
-      <h2><span class="step">1</span>圧縮の強さ</h2>
-      <div class="seg" id="presets" role="group" aria-label="圧縮の強さ"></div>
-      <p class="desc" id="presetDesc"></p>
+      <h2><span class="step">1</span>圧縮のしかた</h2>
+      <div class="seg mode" id="modes" role="group" aria-label="圧縮のしかた">
+        <button type="button" data-mode="preset">強さを選ぶ</button>
+        <button type="button" data-mode="target">サイズの上限を決める</button>
+      </div>
+      <div id="presetPanel">
+        <div class="seg" id="presets" role="group" aria-label="圧縮の強さ"></div>
+        <p class="desc" id="presetDesc"></p>
+      </div>
+      <div id="targetPanel" hidden>
+        <div class="row">
+          <div class="field">
+            <label class="lbl" for="target">1 ファイルの上限</label>
+            <span class="target-in"><input type="number" id="target" min="0.05" step="0.1" inputmode="decimal"><span>MB</span></span>
+          </div>
+          <div class="chips" id="targetChips" role="group" aria-label="よく使う上限"></div>
+        </div>
+        <p class="desc">この大きさ以下に収まる範囲で、できるだけ画質の高い設定を自動で探します（1 ファイルにつき最大 5 回圧縮して比べます）。1 MB は 1,024 KB で、Windows のエクスプローラーの表示と同じです。</p>
+      </div>
       <details class="more" id="more">
         <summary>詳細設定</summary>
         <div class="row">
-          <div class="field">
+          <div class="field" id="dpiField">
             <label class="lbl" for="dpi">画像の解像度</label>
             <select id="dpi">
               <option value="0">プリセットどおり</option>
@@ -227,7 +250,7 @@ footer a { color: inherit; }
           <label class="chk"><input type="checkbox" id="gray">白黒（グレースケール）にする</label>
           <label class="chk"><input type="checkbox" id="keepSmaller" checked>元のほうが小さければ圧縮結果を使わない</label>
         </div>
-        <p class="hint">解像度は、これより細かい画像だけを縮小します（粗い画像を拡大はしません）。白黒 2 値の画像（スキャンした文字など）は、この 2 倍（300〜1,200 dpi）にそろえます。</p>
+        <p class="hint" id="dpiHint">解像度は、これより細かい画像だけを縮小します（粗い画像を拡大はしません）。白黒 2 値の画像（スキャンした文字など）は、この 2 倍（300〜1,200 dpi）にそろえます。</p>
       </details>
     </div>
 
@@ -261,7 +284,7 @@ footer a { color: inherit; }
     <div class="box doc">
       <h2>使い方</h2>
       <ol>
-        <li>圧縮の強さを選びます。迷ったら「標準」で十分です。</li>
+        <li>圧縮の強さを選びます。迷ったら「標準」で十分です。添付できる大きさが決まっているときは「サイズの上限を決める」を選び、上限を入れます。</li>
         <li>PDF をドラッグ＆ドロップするか「ファイルを選ぶ」で選ぶと、すぐに圧縮が始まります。</li>
         <li>「保存」で 1 件ずつ、「すべて保存（ZIP）」でまとめて保存します。保存するファイル名は <code>元の名前_compressed.pdf</code> です。</li>
         <li>画質が気になるときは「画質を確認」で、圧縮前と圧縮後の同じページを並べて比べられます（2 つの表示は一緒にスクロールします）。</li>
@@ -280,6 +303,16 @@ footer a { color: inherit; }
         </tbody>
       </table></div>
       <p>写真や画像が少ない PDF では、強さを変えてもサイズはほとんど変わりません。また、画像の内容によっては「最小サイズ」より「標準」のほうが小さくなることもあります（Ghostscript が画像ごとに JPEG と可逆圧縮を選び分けるため）。</p>
+
+      <h2>サイズの上限を決める</h2>
+      <p>「サイズの上限を決める」を選ぶと、1 ファイルの上限（例：メールに添付できる 2 MB）に収まる範囲で、できるだけ画質の高い設定を自動で選びます。</p>
+      <ul>
+        <li>画像の解像度と JPEG の画質を組み合わせた 11 段階（300 dpi・画質「高」〜 50 dpi・画質「最低」）から、上限に収まる最も高画質な段を二分探索で探します。1 ファイルにつき最大 5 回圧縮するので、ふつうの圧縮より時間がかかります</li>
+        <li>もともと上限以下のファイルは、画質を落とさないよう圧縮しません</li>
+        <li>いちばん低い画質でも収まらないときは「上限に届かず」と表示し、最も小さかった結果を保存できるようにします。白黒にする（詳細設定）か、ページを分けてください</li>
+        <li>上限の 1 MB は 1,024 KB（1,048,576 バイト）で、Windows のエクスプローラーの表示と同じです。システムによっては 1 MB を 1,000,000 バイトとして数えるので、上限ちょうどを狙うときは少し小さめに設定してください</li>
+        <li>画像の量によっては、画質を下げたほうがかえって大きくなる段があります（縮小の倍率が整数でないと、画像の細かい模様が残り JPEG が縮みにくいため）。この場合も、上限を超える結果は選びません</li>
+      </ul>
 
       <h2>何が小さくなるか</h2>
       <ul>

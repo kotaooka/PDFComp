@@ -9,35 +9,88 @@ export const PRESETS = {
   prepress: { label: '高画質',     dpi: 300, desc: '300 dpi で、色の情報（カラープロファイル）も残します。縮む量は最も小さくなります' },
 };
 
-export const DEFAULT_SETTINGS = { preset: 'ebook', dpi: 0, gray: false, keepSmaller: true };
+// mode: preset（強さを選ぶ）| target（目標サイズを指定）。target はバイト数（1 MB = 1,048,576 バイト）
+export const DEFAULT_SETTINGS = { mode: 'preset', preset: 'ebook', dpi: 0, gray: false, keepSmaller: true, target: 2 * 1048576 };
 
 // 白黒 2 値の画像（スキャンした文字など）の解像度。カラー・グレーの 2 倍とし、300〜1200 dpi に収める
 export function monoDpi(dpi) {
   return Math.min(Math.max(dpi * 2, 300), 1200);
 }
 
+// 画像の縮小を指定する引数
+//   しきい値 1.0：目標の解像度より細かい画像はすべて縮小する。Ghostscript の既定は 1.5 で、
+//   たとえば 300 dpi の画像を 200 dpi 指定にしても 1.5 倍を超えないため縮小されない
+function downsampleArgs(dpi) {
+  const d = Math.round(dpi);
+  return [
+    '-dDownsampleColorImages=true', `-dColorImageResolution=${d}`, '-dColorImageDownsampleThreshold=1.0',
+    '-dDownsampleGrayImages=true', `-dGrayImageResolution=${d}`, '-dGrayImageDownsampleThreshold=1.0',
+    '-dDownsampleMonoImages=true', `-dMonoImageResolution=${monoDpi(d)}`, '-dMonoImageDownsampleThreshold=1.0',
+  ];
+}
+
 // 圧縮用の引数
-export function compressArgs(settings, input, output, password) {
+//   level を渡すと目標サイズ用（TARGET_LEVELS の 1 段）：標準（/ebook）を土台に解像度と JPEG の画質を指定する
+export function compressArgs(settings, input, output, password, level) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
-  const preset = PRESETS[s.preset] ? s.preset : 'ebook';
+  const preset = level ? 'ebook' : (PRESETS[s.preset] ? s.preset : 'ebook');
   const args = [
     '-sDEVICE=pdfwrite',
     '-dCompatibilityLevel=1.7',
     `-dPDFSETTINGS=/${preset}`,
     '-dNOPAUSE', '-dBATCH', '-dSAFER',
   ];
-  if (s.dpi > 0) {
-    const d = Math.round(s.dpi);
-    args.push(
-      '-dDownsampleColorImages=true', `-dColorImageResolution=${d}`,
-      '-dDownsampleGrayImages=true', `-dGrayImageResolution=${d}`,
-      '-dDownsampleMonoImages=true', `-dMonoImageResolution=${monoDpi(d)}`,
-    );
-  }
+  if (level) args.push(...downsampleArgs(level.dpi));
+  else if (s.dpi > 0) args.push(...downsampleArgs(s.dpi));
   if (s.gray) args.push('-sColorConversionStrategy=Gray', '-dProcessColorModel=/DeviceGray');
   if (password) args.push(`-sPDFPassword=${password}`);
-  args.push(`-sOutputFile=${output}`, input);
+  args.push(`-sOutputFile=${output}`);
+  if (level) {
+    // JPEG の画質（QFactor：小さいほど高画質）。写真か線画かは Ghostscript が画像ごとに判定し（AutoFilter）、
+    // JPEG を選んだ画像にこの画質を使う（ACS = 自動判定時の設定）
+    const dict = `<< /QFactor ${level.q} /Blend 1 /HSamples [2 1 1 2] /VSamples [2 1 1 2] >>`;
+    args.push('-c', `<< /ColorACSImageDict ${dict} /GrayACSImageDict ${dict} /ColorImageDict ${dict} /GrayImageDict ${dict} >> setdistillerparams`, '-f');
+  }
+  args.push(input);
   return args;
+}
+
+// 目標サイズ用の段階（高画質 → 低画質）。上から順に、目標に収まる最も高画質な段を二分探索で探す
+export const TARGET_LEVELS = [
+  { dpi: 300, q: 0.4 }, { dpi: 250, q: 0.5 }, { dpi: 200, q: 0.6 }, { dpi: 175, q: 0.7 },
+  { dpi: 150, q: 0.76 }, { dpi: 125, q: 0.9 }, { dpi: 100, q: 1.0 }, { dpi: 85, q: 1.2 },
+  { dpi: 72, q: 1.4 }, { dpi: 60, q: 1.8 }, { dpi: 50, q: 2.4 },
+];
+
+// JPEG 画質の表示名
+export function qualityLabel(q) {
+  return q <= 0.5 ? '高' : q <= 0.8 ? '標準' : q <= 1.3 ? '低' : '最低';
+}
+
+// 目標サイズに収まる最も高画質な段を探す
+//   evaluate(index) は TARGET_LEVELS[index] で圧縮し、{ size, ...任意 } を返す（失敗時は例外を投げる）
+//   画質を下げるほど小さくなる前提で二分探索する（実行は最大 5 回）。前提が崩れても、
+//   試した中で目標以下の最も高画質なもの（なければ最も小さいもの）を返す
+export async function searchTarget(target, evaluate, levels = TARGET_LEVELS) {
+  const tried = new Map();
+  const run = async i => {
+    if (!tried.has(i)) tried.set(i, await evaluate(i));
+    return tried.get(i);
+  };
+  let lo = -1, hi = levels.length;       // lo：収まらない段、hi：収まる段（levels.length は「なし」）
+  // 1 回目は最高画質。収まればそれで終わり
+  if ((await run(0)).size <= target) hi = 0;
+  else {
+    lo = 0;
+    while (hi - lo > 1) {
+      const mid = Math.floor((lo + hi) / 2);
+      if ((await run(mid)).size <= target) hi = mid; else lo = mid;
+    }
+  }
+  const fits = [...tried].filter(([, r]) => r.size <= target).sort((a, b) => a[0] - b[0]);
+  if (fits.length) { const [index, result] = fits[0]; return { reached: true, index, result, attempts: tried.size }; }
+  const [index, result] = [...tried].sort((a, b) => a[1].size - b[1].size)[0];
+  return { reached: false, index, result, attempts: tried.size };
 }
 
 // 画質確認用：指定ページを PNG にする引数

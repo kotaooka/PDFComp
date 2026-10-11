@@ -1,5 +1,5 @@
 // PDF圧縮：画面処理
-import { PRESETS, DEFAULT_SETTINGS, compressArgs, renderArgs, outputName, inspect, formatBytes } from './options.js';
+import { PRESETS, DEFAULT_SETTINGS, TARGET_LEVELS, compressArgs, renderArgs, outputName, inspect, formatBytes, searchTarget, qualityLabel } from './options.js';
 import { makeZip } from './zip.js';
 
 const $ = s => document.querySelector(s);
@@ -42,20 +42,22 @@ function toast(msg) {
 }
 
 // ---------- 設定 ----------
+const MB = 1048576;
+const TARGET_CHIPS = [1, 2, 3, 5, 10];   // よく使う上限（MB）。メール添付やシステムの制限によくある値
 let settings = { ...DEFAULT_SETTINGS };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 壊れた保存値は無視 */ }
 if (!PRESETS[settings.preset]) settings.preset = DEFAULT_SETTINGS.preset;
+if (settings.mode !== 'target') settings.mode = 'preset';
+if (!(settings.target > 0)) settings.target = DEFAULT_SETTINGS.target;
 
 function saveSettings() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) { /* 保存できない環境 */ }
 }
-function settingsKey(s) { return JSON.stringify([s.preset, s.dpi, s.gray]); }
-function settingsLabel(s) {
-  const p = PRESETS[s.preset];
-  const parts = [`${p.label}（${s.dpi || p.dpi} dpi）`];
-  if (s.gray) parts.push('白黒');
-  return parts.join('・');
-}
+function settingsKey(s) { return JSON.stringify(s.mode === 'target' ? ['target', s.target, s.gray] : ['preset', s.preset, s.dpi, s.gray]); }
+// 上限の表示（MB、小数第 2 位まで、末尾の 0 は省く）
+function mbText(bytes) { return `${Number((bytes / MB).toFixed(2))} MB`; }
+
+document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => { settings.mode = b.dataset.mode; onSettingsChanged(); }));
 
 const presetBox = $('#presets');
 for (const [key, p] of Object.entries(PRESETS)) {
@@ -65,21 +67,41 @@ for (const [key, p] of Object.entries(PRESETS)) {
   b.addEventListener('click', () => { settings.preset = key; onSettingsChanged(); });
   presetBox.append(b);
 }
+for (const v of TARGET_CHIPS) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.dataset.mb = String(v); b.textContent = `${v} MB`;
+  b.addEventListener('click', () => { settings.target = v * MB; onSettingsChanged(); });
+  $('#targetChips').append(b);
+}
+$('#target').addEventListener('change', e => {
+  const v = Number(e.target.value);
+  if (v > 0) settings.target = Math.round(v * MB); else toast('上限は 0 より大きい値を入れてください');
+  onSettingsChanged();
+});
 $('#dpi').addEventListener('change', e => { settings.dpi = Number(e.target.value); onSettingsChanged(); });
 $('#gray').addEventListener('change', e => { settings.gray = e.target.checked; onSettingsChanged(); });
 $('#keepSmaller').addEventListener('change', e => { settings.keepSmaller = e.target.checked; onSettingsChanged(); items.forEach(renderItem); updateSummary(); });
 
 function renderSettings() {
+  const target = settings.mode === 'target';
+  document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === settings.mode)));
+  $('#presetPanel').hidden = target;
+  $('#targetPanel').hidden = !target;
+  // 目標サイズのときは解像度を自動で選ぶので、解像度の指定は出さない
+  $('#dpiField').hidden = target;
+  $('#dpiHint').hidden = target;
   presetBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.preset === settings.preset)));
   const p = PRESETS[settings.preset];
   let d = p.desc;
   if (settings.dpi) d += `（詳細設定により、画像は ${settings.dpi} dpi に縮小します）`;
   if (settings.gray) d += '。色はすべて白黒（グレースケール）になります';
   $('#presetDesc').textContent = d;
+  if (document.activeElement !== $('#target')) $('#target').value = String(Number((settings.target / MB).toFixed(2)));
+  $('#targetChips').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.mb) * MB === settings.target)));
   $('#dpi').value = String(settings.dpi);
   $('#gray').checked = settings.gray;
   $('#keepSmaller').checked = settings.keepSmaller;
-  if (settings.dpi || settings.gray || !settings.keepSmaller) $('#more').open = true;
+  if ((settings.dpi && !target) || settings.gray || !settings.keepSmaller) $('#more').open = true;
 }
 function onSettingsChanged() {
   saveSettings();
@@ -198,30 +220,58 @@ async function processQueue() {
 async function compressItem(it) {
   it.status = 'running'; it.page = 0; it.error = ''; it.log = null;
   it.settings = { ...settings };
+  it.attempt = 0; it.attemptDpi = 0; it.level = null; it.result = null;
   renderItem(it);
+  const s = it.settings;
+  // 1 回圧縮する。失敗したら { failure } を投げる（目標サイズの探索を打ち切るため）
   const data = new Uint8Array(await it.file.arrayBuffer());
-  const r = await runGs(compressArgs(it.settings, 'in.pdf', 'out.pdf', it.password), { 'in.pdf': data }, ['out.pdf'], (page, pages) => {
-    it.page = page; it.pages = pages || it.pages;
-    renderProgress(it);
-  });
-  it.log = r.log;
-  if (r.ok) {
-    const out = r.files['out.pdf'];
+  const compressOnce = async level => {
+    const r = await runGs(compressArgs(s, 'in.pdf', 'out.pdf', it.password, level), { 'in.pdf': data }, ['out.pdf'], (page, pages) => {
+      it.page = page; it.pages = pages || it.pages;
+      renderProgress(it);
+    });
+    it.log = r.log;
+    if (!r.ok) throw { failure: r };
     it.pages = r.pages || it.pages;
-    it.result = new Blob([out], { type: 'application/pdf' });
-    it.status = out.length >= it.file.size ? 'nogain' : 'done';
-  } else if (r.code === 'password' || r.code === 'badpassword') {
-    it.status = r.code;
-  } else if (r.code === 'stopped') {
-    it.status = 'stopped';
-  } else {
-    it.status = 'error';
-    it.error = r.code === 'memory'
-      ? 'メモリが足りず圧縮できませんでした。ファイルが大きすぎる可能性があります'
-      : r.message;
+    return { size: r.files['out.pdf'].length, out: r.files['out.pdf'] };
+  };
+  try {
+    if (s.mode === 'target') {
+      if (it.file.size <= s.target) {
+        // もともと上限以下なら、画質を落とさないよう圧縮しない
+        it.status = 'fits';
+      } else {
+        const found = await searchTarget(s.target, async i => {
+          it.attempt++; it.attemptDpi = TARGET_LEVELS[i].dpi; it.page = 0;
+          renderProgress(it);
+          return compressOnce(TARGET_LEVELS[i]);
+        });
+        it.level = TARGET_LEVELS[found.index];
+        it.attempts = found.attempts;
+        it.result = new Blob([found.result.out], { type: 'application/pdf' });
+        it.status = found.result.size >= it.file.size ? 'nogain' : found.reached ? 'done' : 'missed';
+      }
+    } else {
+      const r = await compressOnce();
+      it.result = new Blob([r.out], { type: 'application/pdf' });
+      it.status = r.size >= it.file.size ? 'nogain' : 'done';
+    }
+  } catch (e) {
+    const r = e.failure || { code: 'crash', message: String(e && e.message || e) };
+    if (r.code === 'password' || r.code === 'badpassword') it.status = r.code;
+    else if (r.code === 'stopped') it.status = 'stopped';
+    else {
+      it.status = 'error';
+      it.error = r.code === 'memory' ? 'メモリが足りず圧縮できませんでした。ファイルが大きすぎる可能性があります' : r.message;
+    }
   }
   renderItem(it);
   updateSummary();
+}
+
+// 保存に使えるか（ZIP に入れるか）
+function usable(it) {
+  return it.status === 'done' || it.status === 'missed' || (it.status === 'nogain' && !settings.keepSmaller);
 }
 
 // ---------- 一覧の表示 ----------
@@ -232,6 +282,7 @@ function createItemEl(it) {
     <div class="warns" hidden></div>
     <div class="itembar" hidden><div class="bar"><i></i></div></div>
     <div class="sizes" hidden></div>
+    <div class="detail" hidden></div>
     <div class="err" hidden></div>
     <div class="actions"></div>
     <details class="log" hidden><summary>処理の記録</summary><pre></pre></details>`;
@@ -241,7 +292,7 @@ function createItemEl(it) {
 
 const STATUS = {
   queued: ['待機中', ''], running: ['圧縮中', 'run'], done: ['完了', 'ok'], nogain: ['縮みませんでした', 'warn'],
-  password: ['パスワードが必要', 'warn'], badpassword: ['パスワードが違います', 'ng'], error: ['失敗', 'ng'], stopped: ['中止', ''],
+  password: ['パスワードが必要', 'warn'], fits: ['上限以下（元のまま）', 'ok'], missed: ['上限に届かず', 'warn'], badpassword: ['パスワードが違います', 'ng'], error: ['失敗', 'ng'], stopped: ['中止', ''],
 };
 
 function renderItem(it) {
@@ -289,6 +340,16 @@ function renderItem(it) {
     sizes.hidden = true;
   }
 
+  // 上限を決めて圧縮したときの内訳
+  const detail = li.querySelector('.detail');
+  let dt = '';
+  const lim = it.settings?.mode === 'target' ? mbText(it.settings.target) : '';
+  if (it.status === 'fits') dt = `上限 ${lim} 以下なので、圧縮せず元のまま使えます`;
+  else if (lim && it.level && it.status === 'done') dt = `上限 ${lim} に収まる設定：画像 ${it.level.dpi} dpi・JPEG 画質「${qualityLabel(it.level.q)}」（${it.attempts} 回の圧縮で決定）`;
+  else if (lim && it.level && it.status === 'missed') dt = `いちばん低い画質（画像 ${it.level.dpi} dpi・JPEG 画質「${qualityLabel(it.level.q)}」）でも上限 ${lim} に収まりませんでした。最も小さかった結果を表示しています。${it.settings.gray ? '' : '詳細設定で白黒にすると、さらに小さくなることがあります。'}ページを分けることも検討してください`;
+  detail.hidden = !dt;
+  detail.textContent = dt;
+
   const err = li.querySelector('.err');
   err.hidden = it.status !== 'error';
   err.textContent = it.error || '';
@@ -301,7 +362,7 @@ function renderItem(it) {
     b.type = 'button'; b.className = `btn small${primary ? ' primary' : ''}`; b.textContent = text;
     b.addEventListener('click', fn); act.append(b); return b;
   };
-  const useResult = it.status === 'done' || (it.status === 'nogain' && !settings.keepSmaller);
+  const useResult = usable(it);
   if (useResult) btn('保存', () => download(it.result, outputName(it.file.name)), true);
   if (it.status === 'nogain' && settings.keepSmaller) btn('それでも圧縮結果を保存', () => download(it.result, outputName(it.file.name)));
   if (it.result) btn('画質を確認', () => openCompare(it));
@@ -329,10 +390,11 @@ function renderProgress(it) {
   if (it.pages) {
     bar.classList.remove('indet');
     bar.firstElementChild.style.width = `${(it.page / it.pages * 100).toFixed(1)}%`;
-    badge.textContent = `圧縮中 ${it.page} / ${it.pages} ページ`;
+    const trial = it.attempt ? `${it.attempt} 回目（${it.attemptDpi} dpi）` : '';
+    badge.textContent = trial ? `探索 ${trial} ${it.page} / ${it.pages}` : `圧縮中 ${it.page} / ${it.pages} ページ`;
   } else {
     bar.classList.add('indet');
-    badge.textContent = engineReady ? '圧縮中' : 'エンジン読込中';
+    badge.textContent = !engineReady ? 'エンジン読込中' : it.attempt ? `探索 ${it.attempt} 回目（${it.attemptDpi} dpi）` : '圧縮中';
   }
 }
 
@@ -346,9 +408,9 @@ function removeItem(it) {
 
 function updateSummary() {
   const finished = items.filter(x => x.result);
-  const usable = finished.filter(x => x.status === 'done' || (x.status === 'nogain' && !settings.keepSmaller));
+  const use = finished.filter(usable);
   const before = finished.reduce((s, x) => s + x.file.size, 0);
-  const after = finished.reduce((s, x) => s + (usable.includes(x) ? x.result.size : x.file.size), 0);
+  const after = finished.reduce((s, x) => s + (use.includes(x) ? x.result.size : x.file.size), 0);
   const total = $('#total');
   if (finished.length) {
     const rate = before ? (1 - after / before) * 100 : 0;
@@ -356,14 +418,20 @@ function updateSummary() {
   } else {
     total.textContent = items.length ? `${items.length} 件` : '';
   }
-  $('#zipBtn').disabled = !usable.length || busy;
+  $('#zipBtn').disabled = !use.length || busy;
   // 圧縮したときの設定と今の設定が違うものがあれば「やり直す」を出す
   const now = settingsKey(settings);
   $('#rerunBtn').hidden = busy || !items.some(x => x.settings && settingsKey(x.settings) !== now && x.status !== 'error');
   const nogain = finished.filter(x => x.status === 'nogain' && settings.keepSmaller).length;
+  const fits = items.filter(x => x.status === 'fits').length;
+  const missed = items.filter(x => x.status === 'missed').length;
+  const msgs = [];
+  if (fits) msgs.push(`${fits} 件はもともと上限以下のため圧縮していません（保存・ZIP の対象外）。元のファイルをそのまま使ってください。`);
+  if (nogain) msgs.push(`${nogain} 件は圧縮しても小さくならなかったため、保存（ZIP）に含めません。元のファイルをそのまま使ってください。`);
+  if (missed) msgs.push(`${missed} 件は上限に収まりませんでした（最も小さくした結果は保存できます）。`);
   const notice = $('#notice');
-  notice.hidden = !nogain;
-  notice.textContent = nogain ? `${nogain} 件は圧縮しても小さくならなかったため、保存（ZIP）に含めません。元のファイルをそのまま使ってください。` : '';
+  notice.hidden = !msgs.length;
+  notice.textContent = msgs.join(' ');
 }
 
 // ---------- 保存 ----------
@@ -376,12 +444,12 @@ function download(blob, name) {
 }
 
 $('#zipBtn').addEventListener('click', async () => {
-  const usable = items.filter(x => x.status === 'done' || (x.status === 'nogain' && !settings.keepSmaller));
-  if (!usable.length) return;
-  if (usable.length === 1) { download(usable[0].result, outputName(usable[0].file.name)); return; }
+  const list = items.filter(usable);
+  if (!list.length) return;
+  if (list.length === 1) { download(list[0].result, outputName(list[0].file.name)); return; }
   const used = new Set();
   const entries = [];
-  for (const it of usable) {
+  for (const it of list) {
     // 同じ名前のファイルが複数あるときは (2) などを付ける
     let name = outputName(it.file.name), n = 1;
     while (used.has(name.toLowerCase())) name = outputName(it.file.name).replace(/\.pdf$/i, ` (${++n}).pdf`);

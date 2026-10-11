@@ -6,7 +6,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import loadGhostscript from '../vendor/ghostpdl-wasm/gs.js';
-import { compressArgs, renderArgs, outputName, inspect, monoDpi, formatBytes, PRESETS } from '../js/options.js';
+import { compressArgs, renderArgs, outputName, inspect, monoDpi, formatBytes, PRESETS, TARGET_LEVELS, searchTarget, qualityLabel } from '../js/options.js';
 import { crc32, makeZip } from '../js/zip.js';
 
 // WASM が停止して戻らない場合に備えた全体の制限時間
@@ -100,6 +100,45 @@ const d72 = await gs(compressArgs({ preset: 'printer', dpi: 72 }, 'in.pdf', 'out
 check('解像度の指定がプリセットより優先される', d72.out && d72.out.length < sizes.printer / 3, `${d72.out?.length} vs ${sizes.printer}`);
 const gray = await gs(compressArgs({ preset: 'ebook', gray: true }, 'in.pdf', 'out.pdf'), src, 'out.pdf');
 check('白黒にすると色空間が DeviceGray になる', gray.out && /\/DeviceGray/.test(Buffer.from(gray.out).toString('latin1')) && !/\/DeviceRGB/.test(Buffer.from(gray.out).toString('latin1')));
+
+// 画像の幅（出力の画像辞書の /Width）。テスト用 PDF の画像は 1,200 × 1,600 px を A4 全面に置く
+const widthOf = pdf => Number(/\/Subtype\s*\/Image[^>]*?\/Width\s+(\d+)|\/Width\s+(\d+)[^>]*?\/Subtype\s*\/Image/.exec(Buffer.from(pdf).toString('latin1'))?.slice(1).find(Boolean));
+const d120 = await gs(compressArgs({ preset: 'printer', dpi: 120 }, 'in.pdf', 'out.pdf'), src, 'out.pdf');
+// Ghostscript は縦横の解像度の小さいほう（1,600 px ÷ 11.69 in ≒ 136.8 dpi）を画像の解像度とみなす。
+// 既定のしきい値 1.5 だと 136.8 / 120 ≒ 1.14 倍なので縮小されない。しきい値 1.0 なら 120 dpi に縮む
+const expectW = Math.round(1200 * 120 / (1600 / (842 / 72)));
+check('目標の 1.5 倍未満の画像も縮小する（しきい値 1.0）', Math.abs(widthOf(d120.out) - expectW) <= 2, `幅 ${widthOf(d120.out)}（期待 ${expectW}）`);
+
+console.log('上限サイズの探索（実際の圧縮）');
+const evalLevel = async i => { const r = await gs(compressArgs({}, 'in.pdf', 'out.pdf', null, TARGET_LEVELS[i]), src, 'out.pdf'); if (r.rc !== 0) throw new Error('圧縮失敗'); return { size: r.out.length }; };
+const levelSizes = [];
+for (let i = 0; i < TARGET_LEVELS.length; i++) levelSizes.push((await evalLevel(i)).size);
+console.log(`  （段ごとの大きさ：${levelSizes.map((v, i) => `${TARGET_LEVELS[i].dpi}dpi ${formatBytes(v)}`).join('、')}）`);
+check('最高画質より最低画質が小さい', levelSizes.at(-1) < levelSizes[0] / 3);
+const goal = Math.round((levelSizes[3] + levelSizes[5]) / 2);
+const found = await searchTarget(goal, evalLevel);
+check('上限に収まる結果を返す', found.reached && found.result.size <= goal, `${found.result.size} > ${goal}`);
+check('収まる段のうち最も高画質（全段の結果と一致）', found.index === levelSizes.findIndex(v => v <= goal), `index ${found.index}`);
+check('圧縮は 5 回以内', found.attempts <= 5, `${found.attempts} 回`);
+const compressSrc = await gs(compressArgs({}, 'in.pdf', 'out.pdf', null, TARGET_LEVELS[0]), src, 'out.pdf');
+check('JPEG 画質の指定（-c … setdistillerparams）でも進捗の行が出る', compressSrc.log.includes('Processing pages 1 through 2.'));
+
+console.log('上限サイズの探索（論理）');
+const fake = sizes => async i => ({ size: sizes[i] });
+const mono = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5];
+let calls = 0;
+const f1 = await searchTarget(1000, async i => { calls++; return { size: mono[i] }; });
+check('最高画質で収まれば 1 回で終わる', f1.reached && f1.index === 0 && calls === 1);
+for (const goal of [95, 72, 41, 30, 6]) {
+  const f = await searchTarget(goal, fake(mono));
+  check(`単調なとき最適な段を選ぶ（上限 ${goal}）`, f.reached && f.index === mono.findIndex(v => v <= goal) && f.attempts <= 5, JSON.stringify(f));
+}
+const f2 = await searchTarget(1, fake(mono));
+check('どの段でも収まらないときは最小の結果を返す', !f2.reached && f2.result.size === 5 && f2.index === mono.length - 1);
+const bumpy = [100, 90, 80, 70, 54, 55, 16, 21, 9, 8, 6];
+const f3 = await searchTarget(50, fake(bumpy));
+check('逆転があっても上限は守る', f3.reached && f3.result.size <= 50);
+check('画質の表示名', qualityLabel(0.4) === '高' && qualityLabel(0.76) === '標準' && qualityLabel(1.2) === '低' && qualityLabel(2.4) === '最低');
 
 console.log('画質確認用の描画');
 // 圧縮後（150 dpi の画像）を 288 dpi で描く＝画像を拡大する。-dMaxBitmap がないとこの WASM 版は停止する
