@@ -39,7 +39,7 @@ node tests/test.mjs     # Node 20 以降。失敗があれば終了コード 1
 
 1. `npm pack @okathira/ghostpdl-wasm@<版>` で取得し、`package/dist/gs.js`・`gs.wasm` と `package/LICENSE` を `vendor/ghostpdl-wasm/` に置き換える
 2. `js/app.js` の `WASM_SIZE` を新しい `gs.wasm` のバイト数に合わせる（読み込みの進捗表示に使う）
-3. `index.html` の「解説」と README の版を直す
+3. `index.html` の「解説」と README の版（ghostpdl-wasm の版と Ghostscript の版、ソースへのリンク）を直す
 4. `node tests/test.mjs` を通し、`sw.js` の `VERSION` と `ENGINE_CACHE` の名前を変える（エンジンは `VERSION` を上げても消えない別のキャッシュに入っているため）
 
 ビルドの由来は npm の Provenance（okathira/ghostpdl-wasm の GitHub Actions）で確かめられます。

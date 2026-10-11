@@ -71,6 +71,6 @@ Ghostscript をインストールして使う Windows 用のバッチファイ�
 
 ## ライセンス
 
-[GNU AGPL v3](LICENSE)。圧縮エンジンの Ghostscript（Artifex Software, Inc.）が AGPL v3 のため、このツールも AGPL v3 で公開しています。同梱の WebAssembly 版は [okathira/ghostpdl-wasm](https://github.com/okathira/ghostpdl-wasm)、Ghostscript のソースは [ArtifexSoftware/ghostpdl](https://github.com/ArtifexSoftware/ghostpdl) にあります。
+[GNU AGPL v3](LICENSE)。圧縮エンジンの Ghostscript（Artifex Software, Inc.）が AGPL v3 のため、このツールも AGPL v3 で公開しています。同梱しているのは WebAssembly 版の [okathira/ghostpdl-wasm v1.1.0](https://github.com/okathira/ghostpdl-wasm/tree/v1.1.0)（Ghostscript 10.06.0）で、Ghostscript の対応するソースは [ArtifexSoftware/ghostpdl の ghostpdl-10.06.0](https://github.com/ArtifexSoftware/ghostpdl/tree/ghostpdl-10.06.0) にあります。
 
 開発者向けの情報は [DEVELOPMENT.md](DEVELOPMENT.md) にあります。
