@@ -2,7 +2,7 @@
 
 PDF のファイルサイズを小さくする Web ツールです。スキャンした書類や写真の多い報告書を、メールやシステムに添付できる大きさまで縮めます。
 
-**https://kotaooka.github.io/pdfcomp/**
+**https://kotaooka.github.io/PDFComp/**
 
 インストールは不要で、ブラウザで開くだけで使えます。
 
