@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF圧縮</title>
+<meta name="description" content="PDF のファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
+<link rel="canonical" href="https://kotaooka.github.io/pdfcomp/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="QC Workbench">
+<meta property="og:title" content="PDF圧縮｜ブラウザだけで PDF を小さくする">
+<meta property="og:description" content="PDF のファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
+<meta property="og:url" content="https://kotaooka.github.io/pdfcomp/">
+<meta property="og:image" content="https://kotaooka.github.io/pdfcomp/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="PDF圧縮：ブラウザだけで PDF を小さくする">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1d5c96" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11161b" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="PDF圧縮">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script>
+  // 保存したテーマ（auto / light / dark）を描画前に当てる。キーは QC Workbench の全ツールで共通
+  try { const t = localStorage.getItem("qc-workbench-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) { /* 保存できない環境 */ }
+</script>
+<style>
+/* 色・字体は QC Workbench の他のツール（cpk-calc / msa-calc など）と共通 */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --ink: #15212c; --ink2: #475563; --muted: #74818e; --line: #d5dce3;
+  --accent: #1d5c96; --accent-ink: #ffffff; --accent-weak: #e1ebf5;
+  --ok: #17703a; --ok-weak: #e2f2e7; --ng: #ad2a22; --ng-weak: #f8e4e2; --warn: #8a5300; --warn-weak: #f8ecd9;
+  --f-ui: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161b; --surface: #19212a; --ink: #e6ecf2; --ink2: #a9b5c1; --muted: #7d8996; --line: #2b3641;
+    --accent: #6ba6df; --accent-ink: #0d1620; --accent-weak: #1c2f43;
+    --ok: #57c483; --ok-weak: #163222; --ng: #f07a70; --ng-weak: #3a1c1a; --warn: #e3a84e; --warn-weak: #36280f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161b; --surface: #19212a; --ink: #e6ecf2; --ink2: #a9b5c1; --muted: #7d8996; --line: #2b3641;
+  --accent: #6ba6df; --accent-ink: #0d1620; --accent-weak: #1c2f43;
+  --ok: #57c483; --ok-weak: #163222; --ng: #f07a70; --ng-weak: #3a1c1a; --warn: #e3a84e; --warn-weak: #36280f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.6; -webkit-text-size-adjust: 100%; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 16px; padding-block: 0 56px; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 960px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 0; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { font-size: 1.15rem; margin: 0; letter-spacing: .02em; }
+.brand .std { font-size: .78rem; color: var(--muted); }
+.brand .home { font-size: .78rem; color: var(--muted); text-decoration: none; margin-right: -6px; }
+.brand .home:hover { color: var(--accent); text-decoration: underline; }
+.brand .crumb { font-size: .78rem; color: var(--muted); margin-right: -6px; }
+.brand .theme { margin-left: auto; }
+nav.tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button { flex: 0 0 auto; border: 0; background: none; color: var(--ink2); font: inherit; font-size: .92rem; padding: 8px 12px 10px; cursor: pointer; border-bottom: 3px solid transparent; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 700; }
+nav.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; margin-top: 16px; }
+.box > h2 { font-size: 1rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.box > h2 .step { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: .78rem; }
+.hint { font-size: .8rem; color: var(--muted); }
+.lbl { font-size: .8rem; color: var(--ink2); letter-spacing: .03em; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+input[type="password"], input[type="number"], select {
+  font: inherit; font-size: .92rem; padding: 6px 9px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0;
+}
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+label.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
+label.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.seg button { border: 0; background: var(--bg); color: var(--ink2); font: inherit; font-size: .9rem; padding: 8px 14px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg button small { font-family: var(--f-num); font-size: .72rem; opacity: .8; margin-left: 4px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .9rem; padding: 7px 14px; border-radius: var(--r); cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.btn.small { font-size: .8rem; padding: 4px 10px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.desc { margin: 10px 0 0; font-size: .88rem; color: var(--ink2); }
+details.more { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+details.more summary { cursor: pointer; font-size: .9rem; color: var(--ink2); }
+details.more .row { margin-top: 10px; }
+
+.drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 28px 16px; text-align: center; color: var(--ink2); cursor: pointer; transition: background .15s, border-color .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-weak); }
+.drop strong { color: var(--ink); font-size: 1.02rem; }
+.drop .btn { margin-top: 10px; }
+.privacy { font-size: .82rem; color: var(--ok); margin-top: 10px; }
+.engine { font-size: .82rem; color: var(--ink2); margin-top: 6px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.engine .bar { width: 180px; }
+
+.bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; border: 1px solid var(--line); }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.bar.indet > i { width: 30% !important; animation: indet 1.2s ease-in-out infinite; }
+@keyframes indet { from { margin-left: -30%; } to { margin-left: 100%; } }
+
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.toolbar .total { margin-right: auto; font-size: .9rem; }
+.toolbar .total b { font-family: var(--f-num); }
+.notice { margin-top: 10px; padding: 8px 12px; border-radius: var(--r); background: var(--warn-weak); color: var(--warn); font-size: .85rem; }
+
+ul.files { list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r); }
+ul.files > li { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; }
+ul.files > li:last-child { border-bottom: 0; }
+.fname { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fname .pages { font-weight: 400; color: var(--muted); font-size: .82rem; margin-left: 8px; }
+.badge { font-size: .76rem; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--ink2); border: 1px solid var(--line); white-space: nowrap; justify-self: end; }
+.badge.ok { background: var(--ok-weak); color: var(--ok); border-color: transparent; }
+.badge.ng { background: var(--ng-weak); color: var(--ng); border-color: transparent; }
+.badge.warn { background: var(--warn-weak); color: var(--warn); border-color: transparent; }
+.badge.run { background: var(--accent-weak); color: var(--accent); border-color: transparent; }
+.sizes { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; font-size: .9rem; }
+.sizes .num { white-space: nowrap; }
+.sizes .arrow { color: var(--muted); }
+.sizes .rate { font-weight: 700; font-family: var(--f-num); }
+.sizes .rate.ok { color: var(--ok); }
+.sizes .rate.warn { color: var(--warn); }
+.compare-bar { flex: 1 1 140px; max-width: 260px; height: 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
+.compare-bar > i { display: block; height: 100%; background: var(--ok); }
+.compare-bar.warn > i { background: var(--warn); }
+.itembar { grid-column: 1 / -1; }
+.warns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--warn); }
+.warns span::before { content: "⚠ "; }
+.err { grid-column: 1 / -1; font-size: .85rem; color: var(--ng); }
+.actions { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.actions input[type="password"] { width: 14em; }
+details.log { grid-column: 1 / -1; font-size: .78rem; color: var(--muted); }
+details.log pre { white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto; background: var(--bg); padding: 8px; border-radius: var(--r); margin: 6px 0 0; }
+
+/* 画質の確認 */
+dialog#compare { width: min(1400px, 96vw); height: min(940px, 94vh); padding: 0; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); }
+dialog#compare::backdrop { background: rgba(10, 16, 22, .55); }
+.cmp { display: flex; flex-direction: column; height: 100%; }
+.cmp-head { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.cmp-head h3 { margin: 0; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40ch; }
+.cmp-head .pager { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
+.cmp-head .pager input { width: 4.5em; text-align: right; }
+.cmp-head .close { margin-left: auto; }
+.cmp-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+.pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pane + .pane { border-left: 1px solid var(--line); }
+.pane .cap { padding: 6px 12px; font-size: .82rem; color: var(--ink2); border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
+.pane .cap b { color: var(--ink); }
+.pane .view { flex: 1; overflow: auto; background: #808890; position: relative; }
+.pane .view img { display: block; margin: 0 auto; background: #fff; image-rendering: auto; }
+.pane .view .wait { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: .9rem; }
+@media (max-width: 720px) {
+  .cmp-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+}
+
+/* 解説 */
+.doc h2 { font-size: 1.05rem; margin: 26px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.doc h2:first-child { margin-top: 0; }
+.doc p, .doc li { font-size: .92rem; }
+.doc ul { padding-left: 1.3em; }
+.doc table { border-collapse: collapse; font-size: .88rem; margin: 8px 0; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 5px 10px; text-align: left; }
+.doc th { background: var(--bg); }
+.doc td.num { text-align: right; }
+.doc code { font-family: var(--f-num); font-size: .85em; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+.tbl-wrap { overflow-x: auto; }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: var(--r); font-size: .88rem; z-index: 20; max-width: 90vw; }
+footer { margin-top: 32px; font-size: .78rem; color: var(--muted); }
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <a class="home" href="https://kotaooka.github.io/" title="QC Workbench（ツール一覧）へ戻る">QC Workbench</a><span class="crumb" aria-hidden="true">›</span><h1>PDF圧縮</h1>
+      <span class="std">Ghostscript（ブラウザ版）</span>
+      <button class="btn small theme" id="themeBtn" type="button" aria-label="表示テーマを切り替え">表示：自動</button>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="main" type="button">圧縮</button>
+      <button role="tab" aria-selected="false" data-tab="explain" type="button">解説</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section data-panel="main">
+    <div class="box">
+      <h2><span class="step">1</span>圧縮の強さ</h2>
+      <div class="seg" id="presets" role="group" aria-label="圧縮の強さ"></div>
+      <p class="desc" id="presetDesc"></p>
+      <details class="more" id="more">
+        <summary>詳細設定</summary>
+        <div class="row">
+          <div class="field">
+            <label class="lbl" for="dpi">画像の解像度</label>
+            <select id="dpi">
+              <option value="0">プリセットどおり</option>
+              <option value="300">300 dpi</option>
+              <option value="200">200 dpi</option>
+              <option value="150">150 dpi</option>
+              <option value="100">100 dpi</option>
+              <option value="72">72 dpi</option>
+            </select>
+          </div>
+          <label class="chk"><input type="checkbox" id="gray">白黒（グレースケール）にする</label>
+          <label class="chk"><input type="checkbox" id="keepSmaller" checked>元のほうが小さければ圧縮結果を使わない</label>
+        </div>
+        <p class="hint">解像度は、これより細かい画像だけを縮小します（粗い画像を拡大はしません）。白黒 2 値の画像（スキャンした文字など）は、この 2 倍（300〜1,200 dpi）にそろえます。</p>
+      </details>
+    </div>
+
+    <div class="box">
+      <h2><span class="step">2</span>PDF を選ぶ</h2>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="PDF ファイルを選ぶ">
+        <strong>ここに PDF をドラッグ＆ドロップ</strong><br>
+        <span class="hint">複数のファイルをまとめて圧縮できます</span><br>
+        <button class="btn primary" type="button" id="pickBtn">ファイルを選ぶ</button>
+        <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
+      </div>
+      <div class="privacy">🔒 ファイルはどこにも送信しません。圧縮はすべてこのブラウザの中で行います。</div>
+      <div class="engine" id="engine"><span id="engineText">初回だけ、圧縮エンジン（約 15 MB）を読み込みます。2 回目からは保存したものを使います。</span><span class="bar" id="engineBar" hidden><i></i></span></div>
+    </div>
+
+    <div class="box" id="resultBox" hidden>
+      <h2><span class="step">3</span>結果</h2>
+      <div class="toolbar">
+        <div class="total" id="total"></div>
+        <button class="btn" type="button" id="rerunBtn" hidden>この設定でやり直す</button>
+        <button class="btn" type="button" id="stopBtn" hidden>中止</button>
+        <button class="btn primary" type="button" id="zipBtn" disabled>すべて保存（ZIP）</button>
+        <button class="btn" type="button" id="clearBtn">一覧を消す</button>
+      </div>
+      <div class="notice" id="notice" hidden></div>
+      <ul class="files" id="files"></ul>
+    </div>
+  </section>
+
+  <section data-panel="explain" hidden>
+    <div class="box doc">
+      <h2>使い方</h2>
+      <ol>
+        <li>圧縮の強さを選びます。迷ったら「標準」で十分です。</li>
+        <li>PDF をドラッグ＆ドロップするか「ファイルを選ぶ」で選ぶと、すぐに圧縮が始まります。</li>
+        <li>「保存」で 1 件ずつ、「すべて保存（ZIP）」でまとめて保存します。保存するファイル名は <code>元の名前_compressed.pdf</code> です。</li>
+        <li>画質が気になるときは「画質を確認」で、圧縮前と圧縮後の同じページを並べて比べられます（2 つの表示は一緒にスクロールします）。</li>
+      </ol>
+      <p>設定を変えたあとで「この設定でやり直す」を押すと、一覧のファイルをすべて新しい設定で圧縮し直します。</p>
+
+      <h2>圧縮の強さ</h2>
+      <p>中身は Ghostscript の <code>-dPDFSETTINGS</code> です。画像の解像度は、これより細かい画像を縮小するときの目標値で、Ghostscript の既定値です。</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>強さ</th><th>設定</th><th>カラー・グレー画像</th><th>白黒 2 値の画像</th><th>向いている用途</th></tr></thead>
+        <tbody>
+          <tr><td>最小サイズ</td><td><code>/screen</code></td><td class="num">72 dpi</td><td class="num">300 dpi</td><td>画面で見るだけ、メールの容量制限が厳しいとき</td></tr>
+          <tr><td>標準</td><td><code>/ebook</code></td><td class="num">150 dpi</td><td class="num">300 dpi</td><td>ほとんどの資料。画面表示とふつうの印刷</td></tr>
+          <tr><td>印刷向け</td><td><code>/printer</code></td><td class="num">300 dpi</td><td class="num">1,200 dpi</td><td>印刷して使う資料</td></tr>
+          <tr><td>高画質</td><td><code>/prepress</code></td><td class="num">300 dpi</td><td class="num">1,200 dpi</td><td>色を正確に残したいとき（カラープロファイルを保持）</td></tr>
+        </tbody>
+      </table></div>
+      <p>写真や画像が少ない PDF では、強さを変えてもサイズはほとんど変わりません。また、画像の内容によっては「最小サイズ」より「標準」のほうが小さくなることもあります（Ghostscript が画像ごとに JPEG と可逆圧縮を選び分けるため）。</p>
+
+      <h2>何が小さくなるか</h2>
+      <ul>
+        <li><b>画像</b>：解像度を下げ、JPEG で圧縮し直します。縮む量のほとんどはここです。スキャンした PDF や写真の多い報告書はよく縮みます</li>
+        <li><b>フォント</b>：使っている文字だけを埋め込み直します（サブセット化）</li>
+        <li><b>重複</b>：同じ画像が何度も出てくる場合は 1 つにまとめます</li>
+      </ul>
+      <p>文字と線だけの PDF（Word・Excel から書き出したものなど）はもともと小さく、あまり縮みません。かえって大きくなった場合は、初期設定では圧縮結果を使わず「元のファイルのほうが小さい」と表示します。</p>
+
+      <h2>圧縮で変わること</h2>
+      <ul>
+        <li><b>残るもの</b>：ページの見た目、しおり（ブックマーク）、リンク、文書のタイトル・作成者</li>
+        <li><b>入力欄（フォーム）</b>：入力済みの値のまま、書き込めない普通の文字になります</li>
+        <li><b>電子署名</b>：中身を書き直すため、署名は無効になります。署名済みの書類は、提出用には元のファイルを使ってください</li>
+        <li><b>パスワード</b>：開くのにパスワードが要る PDF は、入力すると圧縮できます。<b>圧縮後のファイルにはパスワードがかかりません</b>。印刷・編集を制限するパスワード（権限パスワード）だけの PDF は、制限が外れた状態で出力されます</li>
+        <li><b>埋め込まれていない日本語フォント</b>：Ghostscript が持つ代わりのフォントを埋め込みます。見た目は保たれますが、文字をコピーしたときに英数字が別の文字になることがあります</li>
+      </ul>
+
+      <h2>データの扱い</h2>
+      <p>このページは GitHub Pages から配信している静的なページです。PDF はブラウザの中の Ghostscript（WebAssembly 版）で処理し、どこにも送信しません。一度開けば、オフラインでも動きます。</p>
+
+      <h2>動作環境</h2>
+      <ul>
+        <li>Chrome・Edge・Firefox・Safari の最新版。スマートフォンでも動きますが、大きなファイルは PC を使ってください</li>
+        <li>扱える大きさはブラウザのメモリに左右されます。数百 MB を超える PDF は失敗することがあります</li>
+        <li>圧縮エンジンは Ghostscript 10.06.0 を WebAssembly にしたもの（<a href="https://github.com/okathira/ghostpdl-wasm">okathira/ghostpdl-wasm</a> 1.1.0）です</li>
+      </ul>
+
+      <h2>ライセンス</h2>
+      <p>このツールは GNU AGPL v3 で公開しています。Ghostscript は Artifex Software, Inc. の著作物で、GNU AGPL v3 で提供されています。ソースコードは <a href="https://github.com/kotaooka/pdfcomp">GitHub</a> にあり、Ghostscript のソースは <a href="https://github.com/ArtifexSoftware/ghostpdl">ArtifexSoftware/ghostpdl</a> から入手できます。</p>
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://github.com/kotaooka/pdfcomp">GitHub（ソースコード）</a> ・ GNU AGPL v3 ・ 圧縮エンジン：<a href="https://www.ghostscript.com/">Ghostscript</a> © Artifex Software, Inc.
+  </footer>
+</main>
+
+<dialog id="compare" aria-label="画質の確認">
+  <div class="cmp">
+    <div class="cmp-head">
+      <h3 id="cmpTitle"></h3>
+      <div class="pager">
+        <button class="btn small" type="button" id="cmpPrev" aria-label="前のページ">◀</button>
+        <input type="number" id="cmpPage" min="1" value="1" aria-label="ページ"><span id="cmpPages"></span>
+        <button class="btn small" type="button" id="cmpNext" aria-label="次のページ">▶</button>
+      </div>
+      <div class="field" style="flex-direction:row;align-items:center;gap:6px">
+        <label class="lbl" for="cmpZoom">拡大</label>
+        <select id="cmpZoom">
+          <option value="96">等倍</option>
+          <option value="192" selected>2 倍</option>
+          <option value="288">3 倍</option>
+        </select>
+      </div>
+      <button class="btn close" type="button" id="cmpClose">閉じる</button>
+    </div>
+    <div class="cmp-body">
+      <div class="pane"><div class="cap"><b>圧縮前</b><span id="cmpSizeA" class="num"></span></div><div class="view" id="cmpA"></div></div>
+      <div class="pane"><div class="cap"><b>圧縮後</b><span id="cmpSizeB" class="num"></span></div><div class="view" id="cmpB"></div></div>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
