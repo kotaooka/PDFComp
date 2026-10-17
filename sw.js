@@ -1,6 +1,6 @@
 // PDF圧縮の Service Worker
 // 公開ファイルを更新したら VERSION を上げる。古いキャッシュは activate 時に削除される
-const VERSION = 'v1.1.1';
+const VERSION = 'v1.1.2';
 const APP_CACHE = `pdfcomp-${VERSION}`;
 const FONT_CACHE = 'pdfcomp-fonts';
 // 圧縮エンジンは別のキャッシュに置き、VERSION を上げても消さない（15 MB を毎回読み直させないため）。
