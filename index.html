@@ -194,6 +194,10 @@ dialog#compare::backdrop { background: rgba(10, 16, 22, .55); }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: var(--r); font-size: .88rem; z-index: 20; max-width: 90vw; }
 footer { margin-top: 32px; font-size: .78rem; color: var(--muted); }
 footer a { color: inherit; }
+
+/* 支援リンク（DESIGN.md 4章）：本文の文字色を引き継ぎ、印刷では隠す */
+.support a { color: inherit; white-space: nowrap; }
+@media print { .support { display: none !important; } }
 </style>
 </head>
 <body>
@@ -347,7 +351,7 @@ footer a { color: inherit; }
   </section>
 
   <footer>
-    <a href="https://github.com/kotaooka/pdfcomp">GitHub（ソースコード）</a> ・ GNU AGPL v3 ・ 圧縮エンジン：<a href="https://www.ghostscript.com/">Ghostscript</a> © Artifex Software, Inc.
+    <a href="https://github.com/kotaooka/pdfcomp">GitHub（ソースコード）</a> ・ GNU AGPL v3 ・ 圧縮エンジン：<a href="https://www.ghostscript.com/">Ghostscript</a> © Artifex Software, Inc.<span class="support"> ・ <a href="https://buymeacoffee.com/kotaooka" target="_blank" rel="noopener"><span aria-hidden="true">☕</span> 開発を応援する（Buy Me a Coffee）</a></span>
   </footer>
 </main>
 
