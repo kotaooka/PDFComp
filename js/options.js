@@ -3,10 +3,10 @@
 
 // 品質プリセット（Ghostscript の -dPDFSETTINGS）。dpi は画像を縮小するときの解像度
 export const PRESETS = {
-  screen:   { label: '最小サイズ', dpi: 72,  desc: '画像を 72 dpi に縮小します。画面で見るだけの資料向け。写真・細かい図は粗くなります' },
-  ebook:    { label: '標準',       dpi: 150, desc: '画像を 150 dpi に縮小します。画面表示とふつうの印刷に十分な画質です' },
-  printer:  { label: '印刷向け',   dpi: 300, desc: '画像を 300 dpi に縮小します。印刷に使う資料向け。縮む量は小さめです' },
-  prepress: { label: '高画質',     dpi: 300, desc: '300 dpi で、色の情報（カラープロファイル）も残します。縮む量は最も小さくなります' },
+  screen:   { label: '最小サイズ', dpi: 72,  desc: '画像を72 dpiに縮小します。画面で見るだけの資料向け。写真・細かい図は粗くなります' },
+  ebook:    { label: '標準',       dpi: 150, desc: '画像を150 dpiに縮小します。画面表示とふつうの印刷に十分な画質です' },
+  printer:  { label: '印刷向け',   dpi: 300, desc: '画像を300 dpiに縮小します。印刷に使う資料向け。縮む量は小さめです' },
+  prepress: { label: '高画質',     dpi: 300, desc: '300 dpiで、色の情報（カラープロファイル）も残します。縮む量は最も小さくなります' },
 };
 
 // mode: preset（強さを選ぶ）| target（目標サイズを指定）。target はバイト数（1 MB = 1,048,576 バイト）

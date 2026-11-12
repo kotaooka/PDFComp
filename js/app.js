@@ -75,7 +75,7 @@ for (const v of TARGET_CHIPS) {
 }
 $('#target').addEventListener('change', e => {
   const v = Number(e.target.value);
-  if (v > 0) settings.target = Math.round(v * MB); else toast('上限は 0 より大きい値を入れてください');
+  if (v > 0) settings.target = Math.round(v * MB); else toast('上限は0より大きい値を入れてください');
   onSettingsChanged();
 });
 $('#dpi').addEventListener('change', e => { settings.dpi = Number(e.target.value); onSettingsChanged(); });
@@ -93,7 +93,7 @@ function renderSettings() {
   presetBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.preset === settings.preset)));
   const p = PRESETS[settings.preset];
   let d = p.desc;
-  if (settings.dpi) d += `（詳細設定により、画像は ${settings.dpi} dpi に縮小します）`;
+  if (settings.dpi) d += `（詳細設定により、画像は${settings.dpi} dpiに縮小します）`;
   if (settings.gray) d += '。色はすべて白黒（グレースケール）になります';
   $('#presetDesc').textContent = d;
   if (document.activeElement !== $('#target')) $('#target').value = String(Number((settings.target / MB).toFixed(2)));
@@ -181,7 +181,7 @@ let itemSeq = 0, busy = false;
 async function addFiles(fileList) {
   const pdfs = [...fileList].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
   const skipped = fileList.length - pdfs.length;
-  if (skipped) toast(`PDF ではないファイル ${skipped} 件は除きました`);
+  if (skipped) toast(`PDFではないファイル${skipped}件は除きました`);
   if (!pdfs.length) return;
   $('#resultBox').hidden = false;
   for (const f of pdfs) {
@@ -190,7 +190,7 @@ async function addFiles(fileList) {
     createItemEl(it);
     try {
       it.info = inspect(new Uint8Array(await f.arrayBuffer()));
-      if (!it.info.pdf) { it.status = 'error'; it.error = 'PDF ファイルとして読み取れません（先頭に %PDF- がありません）'; }
+      if (!it.info.pdf) { it.status = 'error'; it.error = 'PDFファイルとして読み取れません（先頭に%PDF- がありません）'; }
     } catch (e) {
       it.status = 'error'; it.error = `ファイルを読み込めません：${e.message || e}`;
     }
@@ -300,7 +300,7 @@ function renderItem(it) {
   const name = li.querySelector('.fname');
   name.textContent = it.file.name;
   name.title = it.file.name;
-  if (it.pages) { const s = document.createElement('span'); s.className = 'pages'; s.textContent = `${it.pages} ページ`; name.append(s); }
+  if (it.pages) { const s = document.createElement('span'); s.className = 'pages'; s.textContent = `${it.pages}ページ`; name.append(s); }
 
   const [label, cls] = STATUS[it.status];
   const badge = li.querySelector('.badge');
@@ -330,7 +330,7 @@ function renderItem(it) {
     sizes.hidden = false;
     sizes.innerHTML = `
       <span class="num">${formatBytes(a)}</span><span class="arrow">→</span><span class="num">${formatBytes(b)}</span>
-      <span class="compare-bar ${grew ? 'warn' : ''}" title="圧縮後の大きさ（元を 100% とした割合）"><i style="width:${Math.min(100, b / a * 100).toFixed(1)}%"></i></span>
+      <span class="compare-bar ${grew ? 'warn' : ''}" title="圧縮後の大きさ（元を100%とした割合）"><i style="width:${Math.min(100, b / a * 100).toFixed(1)}%"></i></span>
       <span class="rate ${grew ? 'warn' : 'ok'}">${grew ? `+${(-rate).toFixed(1)}%` : `−${rate.toFixed(1)}%`}</span>
       ${grew && settings.keepSmaller ? '<span class="hint">元のファイルのほうが小さいため、元のまま使ってください</span>' : ''}`;
   } else if (it.status !== 'running') {
@@ -344,9 +344,9 @@ function renderItem(it) {
   const detail = li.querySelector('.detail');
   let dt = '';
   const lim = it.settings?.mode === 'target' ? mbText(it.settings.target) : '';
-  if (it.status === 'fits') dt = `上限 ${lim} 以下なので、圧縮せず元のまま使えます`;
-  else if (lim && it.level && it.status === 'done') dt = `上限 ${lim} に収まる設定：画像 ${it.level.dpi} dpi・JPEG 画質「${qualityLabel(it.level.q)}」（${it.attempts} 回の圧縮で決定）`;
-  else if (lim && it.level && it.status === 'missed') dt = `いちばん低い画質（画像 ${it.level.dpi} dpi・JPEG 画質「${qualityLabel(it.level.q)}」）でも上限 ${lim} に収まりませんでした。最も小さかった結果を表示しています。${it.settings.gray ? '' : '詳細設定で白黒にすると、さらに小さくなることがあります。'}ページを分けることも検討してください`;
+  if (it.status === 'fits') dt = `上限${lim}以下なので、圧縮せず元のまま使えます`;
+  else if (lim && it.level && it.status === 'done') dt = `上限${lim}に収まる設定：画像${it.level.dpi} dpi・JPEG画質「${qualityLabel(it.level.q)}」（${it.attempts}回の圧縮で決定）`;
+  else if (lim && it.level && it.status === 'missed') dt = `いちばん低い画質（画像${it.level.dpi} dpi・JPEG画質「${qualityLabel(it.level.q)}」）でも上限${lim}に収まりませんでした。最も小さかった結果を表示しています。${it.settings.gray ? '' : '詳細設定で白黒にすると、さらに小さくなることがあります。'}ページを分けることも検討してください`;
   detail.hidden = !dt;
   detail.textContent = dt;
 
@@ -369,7 +369,7 @@ function renderItem(it) {
   if (it.status === 'password' || it.status === 'badpassword') {
     const inp = document.createElement('input');
     inp.type = 'password'; inp.placeholder = '開くためのパスワード'; inp.autocomplete = 'off';
-    inp.setAttribute('aria-label', `${it.file.name} のパスワード`);
+    inp.setAttribute('aria-label', `${it.file.name}のパスワード`);
     act.append(inp);
     const go = () => { if (!inp.value) { inp.focus(); return; } it.password = inp.value; it.status = 'queued'; renderItem(it); processQueue(); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
@@ -390,11 +390,11 @@ function renderProgress(it) {
   if (it.pages) {
     bar.classList.remove('indet');
     bar.firstElementChild.style.width = `${(it.page / it.pages * 100).toFixed(1)}%`;
-    const trial = it.attempt ? `${it.attempt} 回目（${it.attemptDpi} dpi）` : '';
-    badge.textContent = trial ? `探索 ${trial} ${it.page} / ${it.pages}` : `圧縮中 ${it.page} / ${it.pages} ページ`;
+    const trial = it.attempt ? `${it.attempt}回目（${it.attemptDpi} dpi）` : '';
+    badge.textContent = trial ? `探索${trial} ${it.page} / ${it.pages}` : `圧縮中${it.page} / ${it.pages}ページ`;
   } else {
     bar.classList.add('indet');
-    badge.textContent = !engineReady ? 'エンジン読込中' : it.attempt ? `探索 ${it.attempt} 回目（${it.attemptDpi} dpi）` : '圧縮中';
+    badge.textContent = !engineReady ? 'エンジン読込中' : it.attempt ? `探索${it.attempt}回目（${it.attemptDpi} dpi）` : '圧縮中';
   }
 }
 
@@ -414,9 +414,9 @@ function updateSummary() {
   const total = $('#total');
   if (finished.length) {
     const rate = before ? (1 - after / before) * 100 : 0;
-    total.innerHTML = `${finished.length} 件：<b>${formatBytes(before)}</b> → <b>${formatBytes(after)}</b>（${rate >= 0 ? '−' : '+'}${Math.abs(rate).toFixed(1)}%）`;
+    total.innerHTML = `${finished.length}件：<b>${formatBytes(before)}</b> → <b>${formatBytes(after)}</b>（${rate >= 0 ? '−' : '+'}${Math.abs(rate).toFixed(1)}%）`;
   } else {
-    total.textContent = items.length ? `${items.length} 件` : '';
+    total.textContent = items.length ? `${items.length}件` : '';
   }
   $('#zipBtn').disabled = !use.length || busy;
   // 圧縮したときの設定と今の設定が違うものがあれば「やり直す」を出す
@@ -426,9 +426,9 @@ function updateSummary() {
   const fits = items.filter(x => x.status === 'fits').length;
   const missed = items.filter(x => x.status === 'missed').length;
   const msgs = [];
-  if (fits) msgs.push(`${fits} 件はもともと上限以下のため圧縮していません（保存・ZIP の対象外）。元のファイルをそのまま使ってください。`);
-  if (nogain) msgs.push(`${nogain} 件は圧縮しても小さくならなかったため、保存（ZIP）に含めません。元のファイルをそのまま使ってください。`);
-  if (missed) msgs.push(`${missed} 件は上限に収まりませんでした（最も小さくした結果は保存できます）。`);
+  if (fits) msgs.push(`${fits}件はもともと上限以下のため圧縮していません（保存・ZIPの対象外）。元のファイルをそのまま使ってください。`);
+  if (nogain) msgs.push(`${nogain}件は圧縮しても小さくならなかったため、保存（ZIP）に含めません。元のファイルをそのまま使ってください。`);
+  if (missed) msgs.push(`${missed}件は上限に収まりませんでした（最も小さくした結果は保存できます）。`);
   const notice = $('#notice');
   notice.hidden = !msgs.length;
   notice.textContent = msgs.join(' ');

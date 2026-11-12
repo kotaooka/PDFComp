@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PDF圧縮｜アップロードせずブラウザ内で小さくする無料ツール</title>
-<meta name="description" content="PDF のファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
+<meta name="description" content="PDFのファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
 <link rel="canonical" href="https://kotaooka.github.io/PDFComp/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="QC Workbench">
 <meta property="og:title" content="PDF圧縮｜アップロードせずブラウザ内で小さくする無料ツール">
-<meta property="og:description" content="PDF のファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
+<meta property="og:description" content="PDFのファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
 <meta property="og:url" content="https://kotaooka.github.io/PDFComp/">
 <meta property="og:image" content="https://kotaooka.github.io/PDFComp/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="PDF圧縮：ブラウザだけで PDF を小さくする">
+<meta property="og:image:alt" content="PDF圧縮：ブラウザだけでPDFを小さくする">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#1d5c96" media="(prefers-color-scheme: light)">
@@ -56,7 +56,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; }
+html, body { text-autospace: normal; margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.6; -webkit-text-size-adjust: 100%; }
 .num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
 .wrap { max-width: 960px; margin: 0 auto; padding-inline: 16px; padding-block: 0 56px; }
@@ -230,12 +230,12 @@ footer a { color: inherit; }
       <div id="targetPanel" hidden>
         <div class="row">
           <div class="field">
-            <label class="lbl" for="target">1 ファイルの上限</label>
+            <label class="lbl" for="target">1ファイルの上限</label>
             <span class="target-in"><input type="number" id="target" min="0.05" step="0.1" inputmode="decimal"><span>MB</span></span>
           </div>
           <div class="chips" id="targetChips" role="group" aria-label="よく使う上限"></div>
         </div>
-        <p class="desc">この大きさ以下に収まる範囲で、できるだけ画質の高い設定を自動で探します（1 ファイルにつき最大 5 回圧縮して比べます）。1 MB は 1,024 KB で、Windows のエクスプローラーの表示と同じです。</p>
+        <p class="desc">この大きさ以下に収まる範囲で、できるだけ画質の高い設定を自動で探します（1ファイルにつき最大5回圧縮して比べます）。1 MBは1,024 KBで、Windowsのエクスプローラーの表示と同じです。</p>
       </div>
       <details class="more" id="more">
         <summary>詳細設定</summary>
@@ -254,20 +254,20 @@ footer a { color: inherit; }
           <label class="chk"><input type="checkbox" id="gray">白黒（グレースケール）にする</label>
           <label class="chk"><input type="checkbox" id="keepSmaller" checked>元のほうが小さければ圧縮結果を使わない</label>
         </div>
-        <p class="hint" id="dpiHint">解像度は、これより細かい画像だけを縮小します（粗い画像を拡大はしません）。白黒 2 値の画像（スキャンした文字など）は、この 2 倍（300〜1,200 dpi）にそろえます。</p>
+        <p class="hint" id="dpiHint">解像度は、これより細かい画像だけを縮小します（粗い画像を拡大はしません）。白黒2値の画像（スキャンした文字など）は、この2倍（300〜1,200 dpi）にそろえます。</p>
       </details>
     </div>
 
     <div class="box">
-      <h2><span class="step">2</span>PDF を選ぶ</h2>
-      <div class="drop" id="drop" tabindex="0" role="button" aria-label="PDF ファイルを選ぶ">
-        <strong>ここに PDF をドラッグ＆ドロップ</strong><br>
+      <h2><span class="step">2</span>PDFを選ぶ</h2>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="PDFファイルを選ぶ">
+        <strong>ここにPDFをドラッグ＆ドロップ</strong><br>
         <span class="hint">複数のファイルをまとめて圧縮できます</span><br>
         <button class="btn primary" type="button" id="pickBtn">ファイルを選ぶ</button>
         <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple hidden>
       </div>
       <div class="privacy">🔒 ファイルはどこにも送信しません。圧縮はすべてこのブラウザの中で行います。</div>
-      <div class="engine" id="engine"><span id="engineText">初回だけ、圧縮エンジン（約 15 MB）を読み込みます。2 回目からは保存したものを使います。</span><span class="bar" id="engineBar" hidden><i></i></span></div>
+      <div class="engine" id="engine"><span id="engineText">初回だけ、圧縮エンジン（約15 MB）を読み込みます。2回目からは保存したものを使います。</span><span class="bar" id="engineBar" hidden><i></i></span></div>
     </div>
 
     <div class="box" id="resultBox" hidden>
@@ -289,16 +289,16 @@ footer a { color: inherit; }
       <h2>使い方</h2>
       <ol>
         <li>圧縮の強さを選びます。迷ったら「標準」で十分です。添付できる大きさが決まっているときは「サイズの上限を決める」を選び、上限を入れます。</li>
-        <li>PDF をドラッグ＆ドロップするか「ファイルを選ぶ」で選ぶと、すぐに圧縮が始まります。</li>
-        <li>「保存」で 1 件ずつ、「すべて保存（ZIP）」でまとめて保存します。保存するファイル名は <code>元の名前_compressed.pdf</code> です。</li>
-        <li>画質が気になるときは「画質を確認」で、圧縮前と圧縮後の同じページを並べて比べられます（2 つの表示は一緒にスクロールします）。</li>
+        <li>PDFをドラッグ＆ドロップするか「ファイルを選ぶ」で選ぶと、すぐに圧縮が始まります。</li>
+        <li>「保存」で1件ずつ、「すべて保存（ZIP）」でまとめて保存します。保存するファイル名は <code>元の名前_compressed.pdf</code> です。</li>
+        <li>画質が気になるときは「画質を確認」で、圧縮前と圧縮後の同じページを並べて比べられます（2つの表示は一緒にスクロールします）。</li>
       </ol>
       <p>設定を変えたあとで「この設定でやり直す」を押すと、一覧のファイルをすべて新しい設定で圧縮し直します。</p>
 
       <h2>圧縮の強さ</h2>
-      <p>中身は Ghostscript の <code>-dPDFSETTINGS</code> です。画像の解像度は、これより細かい画像を縮小するときの目標値で、Ghostscript の既定値です。</p>
+      <p>中身はGhostscriptの <code>-dPDFSETTINGS</code> です。画像の解像度は、これより細かい画像を縮小するときの目標値で、Ghostscriptの既定値です。</p>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>強さ</th><th>設定</th><th>カラー・グレー画像</th><th>白黒 2 値の画像</th><th>向いている用途</th></tr></thead>
+        <thead><tr><th>強さ</th><th>設定</th><th>カラー・グレー画像</th><th>白黒2値の画像</th><th>向いている用途</th></tr></thead>
         <tbody>
           <tr><td>最小サイズ</td><td><code>/screen</code></td><td class="num">72 dpi</td><td class="num">300 dpi</td><td>画面で見るだけ、メールの容量制限が厳しいとき</td></tr>
           <tr><td>標準</td><td><code>/ebook</code></td><td class="num">150 dpi</td><td class="num">300 dpi</td><td>ほとんどの資料。画面表示とふつうの印刷</td></tr>
@@ -306,47 +306,47 @@ footer a { color: inherit; }
           <tr><td>高画質</td><td><code>/prepress</code></td><td class="num">300 dpi</td><td class="num">1,200 dpi</td><td>色を正確に残したいとき（カラープロファイルを保持）</td></tr>
         </tbody>
       </table></div>
-      <p>写真や画像が少ない PDF では、強さを変えてもサイズはほとんど変わりません。また、画像の内容によっては「最小サイズ」より「標準」のほうが小さくなることもあります（Ghostscript が画像ごとに JPEG と可逆圧縮を選び分けるため）。</p>
+      <p>写真や画像が少ないPDFでは、強さを変えてもサイズはほとんど変わりません。また、画像の内容によっては「最小サイズ」より「標準」のほうが小さくなることもあります（Ghostscriptが画像ごとにJPEGと可逆圧縮を選び分けるため）。</p>
 
       <h2>サイズの上限を決める</h2>
-      <p>「サイズの上限を決める」を選ぶと、1 ファイルの上限（例：メールに添付できる 2 MB）に収まる範囲で、できるだけ画質の高い設定を自動で選びます。</p>
+      <p>「サイズの上限を決める」を選ぶと、1ファイルの上限（例：メールに添付できる2 MB）に収まる範囲で、できるだけ画質の高い設定を自動で選びます。</p>
       <ul>
-        <li>画像の解像度と JPEG の画質を組み合わせた 11 段階（300 dpi・画質「高」〜 50 dpi・画質「最低」）から、上限に収まる最も高画質な段を二分探索で探します。1 ファイルにつき最大 5 回圧縮するので、ふつうの圧縮より時間がかかります</li>
+        <li>画像の解像度とJPEGの画質を組み合わせた11段階（300 dpi・画質「高」〜 50 dpi・画質「最低」）から、上限に収まる最も高画質な段を二分探索で探します。1ファイルにつき最大5回圧縮するので、ふつうの圧縮より時間がかかります</li>
         <li>もともと上限以下のファイルは、画質を落とさないよう圧縮しません</li>
         <li>いちばん低い画質でも収まらないときは「上限に届かず」と表示し、最も小さかった結果を保存できるようにします。白黒にする（詳細設定）か、ページを分けてください</li>
-        <li>上限の 1 MB は 1,024 KB（1,048,576 バイト）で、Windows のエクスプローラーの表示と同じです。システムによっては 1 MB を 1,000,000 バイトとして数えるので、上限ちょうどを狙うときは少し小さめに設定してください</li>
-        <li>画像の量によっては、画質を下げたほうがかえって大きくなる段があります（縮小の倍率が整数でないと、画像の細かい模様が残り JPEG が縮みにくいため）。この場合も、上限を超える結果は選びません</li>
+        <li>上限の1 MBは1,024 KB（1,048,576バイト）で、Windowsのエクスプローラーの表示と同じです。システムによっては1 MBを1,000,000バイトとして数えるので、上限ちょうどを狙うときは少し小さめに設定してください</li>
+        <li>画像の量によっては、画質を下げたほうがかえって大きくなる段があります（縮小の倍率が整数でないと、画像の細かい模様が残りJPEGが縮みにくいため）。この場合も、上限を超える結果は選びません</li>
       </ul>
 
       <h2>何が小さくなるか</h2>
       <ul>
-        <li><b>画像</b>：解像度を下げ、JPEG で圧縮し直します。縮む量のほとんどはここです。スキャンした PDF や写真の多い報告書はよく縮みます</li>
+        <li><b>画像</b>：解像度を下げ、JPEGで圧縮し直します。縮む量のほとんどはここです。スキャンしたPDFや写真の多い報告書はよく縮みます</li>
         <li><b>フォント</b>：使っている文字だけを埋め込み直します（サブセット化）</li>
-        <li><b>重複</b>：同じ画像が何度も出てくる場合は 1 つにまとめます</li>
+        <li><b>重複</b>：同じ画像が何度も出てくる場合は1つにまとめます</li>
       </ul>
-      <p>文字と線だけの PDF（Word・Excel から書き出したものなど）はもともと小さく、あまり縮みません。かえって大きくなった場合は、初期設定では圧縮結果を使わず「元のファイルのほうが小さい」と表示します。</p>
+      <p>文字と線だけのPDF（Word・Excelから書き出したものなど）はもともと小さく、あまり縮みません。かえって大きくなった場合は、初期設定では圧縮結果を使わず「元のファイルのほうが小さい」と表示します。</p>
 
       <h2>圧縮で変わること</h2>
       <ul>
         <li><b>残るもの</b>：ページの見た目、しおり（ブックマーク）、リンク、文書のタイトル・作成者</li>
         <li><b>入力欄（フォーム）</b>：入力済みの値のまま、書き込めない普通の文字になります</li>
         <li><b>電子署名</b>：中身を書き直すため、署名は無効になります。署名済みの書類は、提出用には元のファイルを使ってください</li>
-        <li><b>パスワード</b>：開くのにパスワードが要る PDF は、入力すると圧縮できます。<b>圧縮後のファイルにはパスワードがかかりません</b>。印刷・編集を制限するパスワード（権限パスワード）だけの PDF は、制限が外れた状態で出力されます</li>
-        <li><b>埋め込まれていない日本語フォント</b>：Ghostscript が持つ代わりのフォントを埋め込みます。見た目は保たれますが、文字をコピーしたときに英数字が別の文字になることがあります</li>
+        <li><b>パスワード</b>：開くのにパスワードが要るPDFは、入力すると圧縮できます。<b>圧縮後のファイルにはパスワードがかかりません</b>。印刷・編集を制限するパスワード（権限パスワード）だけのPDFは、制限が外れた状態で出力されます</li>
+        <li><b>埋め込まれていない日本語フォント</b>：Ghostscriptが持つ代わりのフォントを埋め込みます。見た目は保たれますが、文字をコピーしたときに英数字が別の文字になることがあります</li>
       </ul>
 
       <h2>データの扱い</h2>
-      <p>このページは GitHub Pages から配信している静的なページです。PDF はブラウザの中の Ghostscript（WebAssembly 版）で処理し、どこにも送信しません。一度開けば、オフラインでも動きます。</p>
+      <p>このページはGitHub Pagesから配信している静的なページです。PDFはブラウザの中のGhostscript（WebAssembly版）で処理し、どこにも送信しません。一度開けば、オフラインでも動きます。</p>
 
       <h2>動作環境</h2>
       <ul>
-        <li>Chrome・Edge・Firefox・Safari の最新版。スマートフォンでも動きますが、大きなファイルは PC を使ってください</li>
-        <li>扱える大きさはブラウザのメモリに左右されます。数百 MB を超える PDF は失敗することがあります</li>
-        <li>圧縮エンジンは Ghostscript 10.06.0 を WebAssembly にしたもの（<a href="https://github.com/okathira/ghostpdl-wasm">okathira/ghostpdl-wasm</a> 1.1.0）です</li>
+        <li>Chrome・Edge・Firefox・Safariの最新版。スマートフォンでも動きますが、大きなファイルはPCを使ってください</li>
+        <li>扱える大きさはブラウザのメモリに左右されます。数百MBを超えるPDFは失敗することがあります</li>
+        <li>圧縮エンジンはGhostscript 10.06.0をWebAssemblyにしたもの（<a href="https://github.com/okathira/ghostpdl-wasm">okathira/ghostpdl-wasm</a> 1.1.0）です</li>
       </ul>
 
       <h2>ライセンス</h2>
-      <p>このツールは GNU AGPL v3 で公開しています。Ghostscript は Artifex Software, Inc. の著作物で、GNU AGPL v3 で提供されています。ソースコードは <a href="https://github.com/kotaooka/pdfcomp">GitHub</a> にあり、Ghostscript のソースは <a href="https://github.com/ArtifexSoftware/ghostpdl">ArtifexSoftware/ghostpdl</a> から入手できます。</p>
+      <p>このツールはGNU AGPL v3で公開しています。GhostscriptはArtifex Software, Inc. の著作物で、GNU AGPL v3で提供されています。ソースコードは <a href="https://github.com/kotaooka/pdfcomp">GitHub</a> にあり、Ghostscriptのソースは <a href="https://github.com/ArtifexSoftware/ghostpdl">ArtifexSoftware/ghostpdl</a> から入手できます。</p>
     </div>
   </section>
 
@@ -368,8 +368,8 @@ footer a { color: inherit; }
         <label class="lbl" for="cmpZoom">拡大</label>
         <select id="cmpZoom">
           <option value="96">等倍</option>
-          <option value="192" selected>2 倍</option>
-          <option value="288">3 倍</option>
+          <option value="192" selected>2倍</option>
+          <option value="288">3倍</option>
         </select>
       </div>
       <button class="btn close" type="button" id="cmpClose">閉じる</button>

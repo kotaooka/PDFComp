@@ -66,7 +66,7 @@ async function runGs(id, args, inputs, outputs) {
   if (/Password did not work/i.test(text)) return { ok: false, code: 'badpassword', message: 'パスワードが違います', log };
   if (/requires a password/i.test(text)) return { ok: false, code: 'password', message: 'パスワードが必要です', log };
   if (rc !== 0 || /Couldn't initialise file|Unrecoverable error/i.test(text)) {
-    return { ok: false, code: 'failed', message: `Ghostscript がエラーを返しました（終了コード ${rc}）`, log };
+    return { ok: false, code: 'failed', message: `Ghostscriptがエラーを返しました（終了コード${rc}）`, log };
   }
   const files = {};
   for (const name of outputs) {
