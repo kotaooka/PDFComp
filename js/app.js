@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const WASM_SIZE = 15533045;   // vendor/ghostpdl-wasm/gs.wasm の大きさ（読み込みの進捗表示に使う。更新したら合わせる）
 const STORE_KEY = 'pdfcomp-v1';
 
-// ---------- 表示テーマ（QC Workbench 共通） ----------
+// ---------- 表示テーマ（kotaooka.github.io の各ツールで共通） ----------
 const THEME_KEY = 'qc-workbench-theme';
 const THEMES = ['auto', 'light', 'dark'];
 const THEME_LABEL = { auto: '表示：自動', light: '表示：ライト', dark: '表示：ダーク' };

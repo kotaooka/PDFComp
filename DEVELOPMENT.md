@@ -55,4 +55,4 @@ node tests/test.mjs     # Node 20 以降。失敗があれば終了コード 1
 - **上限サイズ**：`TARGET_LEVELS`（解像度と JPEG の QFactor の 11 段）を、最高画質を 1 回試したあと二分探索します（`searchTarget`、最大 5 回）。土台は `/ebook`、QFactor は `-c "<< /ColorACSImageDict … >> setdistillerparams" -f 入力` で渡します（AutoFilter が JPEG を選んだ画像に効く）。画質を下げるほど小さくなる前提ですが、縮小倍率が整数でない段で JPEG が縮みにくく逆転することがあるため、試した中で上限以下の最も高画質な結果を返します。元のファイルが上限以下なら圧縮しません
 - **確認済みの挙動**（Ghostscript 10.06.0）：しおり・リンク・文書情報は残る。AcroForm の入力欄は値ごと平坦化される。権限パスワードだけの PDF は制限なしで出力される。埋め込まれていない日本語フォントは代替フォントが埋め込まれ、見た目は保たれるが英数字のテキスト抽出が崩れることがある
 - **事前チェック**（`inspect`）：PDF の中身を文字列として探す目安です。`/Encrypt`（トレーラー）と `/ByteRange`（電子署名）は圧縮されない場所にあるので確実性が高く、`/AcroForm` はオブジェクトストリーム内にあると見落とします
-- **設定の保存**：ブラウザの localStorage（キー `pdfcomp-v1`）。表示テーマは QC Workbench 共通のキー `qc-workbench-theme`
+- **設定の保存**：ブラウザの localStorage（キー `pdfcomp-v1`）。表示テーマは kotaooka.github.io の各ツールで共通のキー `qc-workbench-theme`

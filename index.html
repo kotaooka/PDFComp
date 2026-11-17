@@ -7,7 +7,6 @@
 <meta name="description" content="PDFのファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
 <link rel="canonical" href="https://kotaooka.github.io/PDFComp/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="QC Workbench">
 <meta property="og:title" content="PDF圧縮｜アップロードせずブラウザ内で小さくする無料ツール">
 <meta property="og:description" content="PDFのファイルサイズを小さくする。インストール不要で、ファイルはどこにも送信せずブラウザの中だけで圧縮する">
 <meta property="og:url" content="https://kotaooka.github.io/PDFComp/">
@@ -27,11 +26,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <script>
-  // 保存したテーマ（auto / light / dark）を描画前に当てる。キーは QC Workbench の全ツールで共通
+  // 保存したテーマ（auto / light / dark）を描画前に当てる。キーは kotaooka.github.io の各ツールで共通
   try { const t = localStorage.getItem("qc-workbench-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) { /* 保存できない環境 */ }
 </script>
 <style>
-/* 色・字体は QC Workbench の他のツール（cpk-calc / msa-calc など）と共通 */
+/* 色・字体は kotaooka.github.io の他のツール（cpk-calc / msa-calc など）と共通 */
 :root {
   --bg: #eef1f4; --surface: #ffffff; --ink: #15212c; --ink2: #475563; --muted: #74818e; --line: #d5dce3;
   --accent: #1d5c96; --accent-ink: #ffffff; --accent-weak: #e1ebf5;
@@ -66,9 +65,6 @@ header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; b
 .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .brand h1 { font-size: 1.15rem; margin: 0; letter-spacing: .02em; }
 .brand .std { font-size: .78rem; color: var(--muted); }
-.brand .home { font-size: .78rem; color: var(--muted); text-decoration: none; margin-right: -6px; }
-.brand .home:hover { color: var(--accent); text-decoration: underline; }
-.brand .crumb { font-size: .78rem; color: var(--muted); margin-right: -6px; }
 .brand .theme { margin-left: auto; }
 nav.tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
 nav.tabs::-webkit-scrollbar { display: none; }
@@ -204,7 +200,7 @@ footer a { color: inherit; }
 <header class="top">
   <div class="top-in">
     <div class="brand">
-      <a class="home" href="https://kotaooka.github.io/" title="QC Workbench（ツール一覧）へ戻る">QC Workbench</a><span class="crumb" aria-hidden="true">›</span><h1>PDF圧縮</h1>
+      <h1>PDF圧縮</h1>
       <span class="std">Ghostscript（ブラウザ版）</span>
       <button class="btn small theme" id="themeBtn" type="button" aria-label="表示テーマを切り替え">表示：自動</button>
     </div>

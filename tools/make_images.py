@@ -11,7 +11,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 FONT_DIR = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "/usr/share/fonts/opentype/noto")
 SS = 4  # 縮小前の倍率（アンチエイリアス用）
 
-ACCENT = (29, 92, 150)       # #1d5c96（QC Workbench のツール共通のアクセント色）
+ACCENT = (29, 92, 150)       # #1d5c96（kotaooka.github.io のツール共通のアクセント色）
 WHITE = (255, 255, 255)
 GREEN = (87, 196, 131)       # 矢印（縮む）
 RED = (214, 69, 60)          # PDF の帯
@@ -81,14 +81,13 @@ def og():
         dr.line([(0, yy), (W, yy)], fill=tuple(round(top[i] + (bot[i] - top[i]) * t) for i in range(3)))
     d = ImageDraw.Draw(im, "RGBA")
     k = 2
-    d.text((72 * k, 106 * k), "QC Workbench", font=font("Regular", 26 * k), fill=(225, 234, 244))
-    d.text((70 * k, 158 * k), "PDF圧縮", font=font("Bold", 74 * k), fill=WHITE)
+    d.text((70 * k, 126 * k), "PDF圧縮", font=font("Bold", 74 * k), fill=WHITE)
     sub = font("Regular", 28 * k)
-    d.text((72 * k, 266 * k), "インストール不要。ファイルを送信せず、", font=sub, fill=(225, 234, 244))
-    d.text((72 * k, 310 * k), "ブラウザの中だけで PDF を小さくする", font=sub, fill=(225, 234, 244))
+    d.text((72 * k, 234 * k), "インストール不要。ファイルを送信せず、", font=sub, fill=(225, 234, 244))
+    d.text((72 * k, 278 * k), "ブラウザの中だけで PDF を小さくする", font=sub, fill=(225, 234, 244))
     pill = font("Regular", 22 * k)
     rows = [["4 段階の強さ", "まとめて圧縮", "ZIP で保存"], ["画質を並べて確認", "オフライン対応"]]
-    y = 404 * k
+    y = 372 * k
     for row in rows:
         x = 72 * k
         for t in row:
