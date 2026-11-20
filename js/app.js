@@ -116,7 +116,8 @@ const jobs = new Map();   // id → { resolve, onProgress }
 
 function getWorker() {
   if (worker) return worker;
-  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  // ローカル版（tools/build-local.mjs）では、HTML に埋め込んだワーカーを window.PDFCOMP_LOCAL_WORKER() が起動する
+  worker = window.PDFCOMP_LOCAL_WORKER ? window.PDFCOMP_LOCAL_WORKER() : new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
   worker.onmessage = ev => {
     const m = ev.data;
     if (m.type === 'load') {

@@ -13,3 +13,7 @@ jobs:
         with:
           node-version: 22
       - run: node tests/test.mjs
+      - name: ローカル版が最新か確かめる
+        run: |
+          node tools/build-local.mjs
+          git diff --exit-code -- local/

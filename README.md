@@ -66,6 +66,18 @@ Chrome・Edge・Firefox・Safari の最新版。扱える大きさはブラウ�
 
 Chrome・Edge でアプリとして追加すると、エクスプローラーで PDF を右クリック →「プログラムから開く」でこのツールに渡せます。
 
+## ローカル版（1 ファイルの HTML）
+
+Web ページを開かずに、手元のファイルだけで使う版です。インストールは不要で、管理者権限もいりません。
+
+1. [local/PDFComp.html](local/PDFComp.html) を開き、右上の「Download raw file」（↓のボタン）で保存します（約 14 MB）
+2. 保存した `PDFComp.html` をダブルクリックして、Chrome か Edge で開きます
+
+- 圧縮エンジンを含むすべてをこの 1 ファイルに収めているので、**インターネットにつながっていなくても動きます**。字体の読み込みも含め、外部のサーバーには接続しません
+- 字体は Windows 標準の BIZ UDPゴシックを使います（Web 版のように Google Fonts から読み込みません）
+- 圧縮の結果は Web 版と同じです。アプリとしての追加（エクスプローラーの「プログラムから開く」）だけは使えません
+- 設定はブラウザに保存されます。HTML を別の場所に移しても引き継がれます（Chrome・Edge の場合）
+
 ## 以前のバッチ版
 
 Ghostscript をインストールして使う Windows 用のバッチファイルは [legacy/PDFComp.bat](legacy/PDFComp.bat) に残しています。

@@ -1,0 +1,2 @@
+# ローカル版は生成物（約 14 MB）。差分を表示しない
+local/PDFComp.html -diff linguist-generated

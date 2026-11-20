@@ -4,17 +4,27 @@
 // （Ghostscript は 1 回の実行で終了する作りのため、使い回さずに毎回作り直すほうが確実で、メモリも解放される）
 import loadGhostscript from '../vendor/ghostpdl-wasm/gs.js';
 
-const WASM_URL = new URL('../vendor/ghostpdl-wasm/gs.wasm', import.meta.url);
 let wasmModule = null;
+// ローカル版（1 ファイルの HTML。tools/build-local.mjs で作る）では、起動直後に画面側から
+// gzip した wasm を Blob で受け取り、展開しながら読む（file:// では fetch で取得できないため）
+let localWasmGz = null;
 
 // wasm を取得してコンパイルする。進捗（受信バイト数）を画面に送る
 async function prepare(expectedSize) {
   if (wasmModule) return;
-  const res = await fetch(WASM_URL);
-  if (!res.ok) throw new Error(`エンジン（gs.wasm）を取得できません（HTTP ${res.status}）`);
-  // 圧縮転送のとき Content-Length は圧縮後の大きさになるので、展開後の大きさ（既知の値）を分母に使う
-  const total = expectedSize || Number(res.headers.get('Content-Length')) || 0;
-  const reader = res.body.getReader();
+  let body, total;
+  if (localWasmGz) {
+    body = localWasmGz.stream().pipeThrough(new DecompressionStream('gzip'));
+    total = expectedSize || 0;
+  } else {
+    // URL はここで作る（ローカル版では基準の URL が blob: になり、相対 URL を作れないため）
+    const res = await fetch(new URL('../vendor/ghostpdl-wasm/gs.wasm', import.meta.url));
+    if (!res.ok) throw new Error(`エンジン（gs.wasm）を取得できません（HTTP ${res.status}）`);
+    // 圧縮転送のとき Content-Length は圧縮後の大きさになるので、展開後の大きさ（既知の値）を分母に使う
+    total = expectedSize || Number(res.headers.get('Content-Length')) || 0;
+    body = res.body;
+  }
+  const reader = body.getReader();
   const chunks = [];
   let loaded = 0, lastPost = 0;
   for (;;) {
@@ -78,6 +88,7 @@ async function runGs(id, args, inputs, outputs) {
 
 self.onmessage = async ev => {
   const msg = ev.data;
+  if (msg.type === 'localWasm') { localWasmGz = msg.gz; return; }
   try {
     if (msg.type === 'prepare') {
       await prepare(msg.expectedSize);

@@ -17,6 +17,8 @@ icons/, og.png             アイコンと SNS 共有用画像（tools/make_imag
 docs/screenshots/          README 用のスクリーンショット（tools/screenshots.py で撮影）
 tests/test.mjs             テスト（下記）
 legacy/PDFComp.bat         以前のバッチ版（Ghostscript のインストールが必要）
+local/PDFComp.html         ローカル版（1 ファイルの HTML。tools/build-local.mjs で作る。手で編集しない）
+tools/build-local.mjs      ローカル版を作るスクリプト
 .github/workflows/         push 時の自動テスト
 ```
 
@@ -25,6 +27,7 @@ legacy/PDFComp.bat         以前のバッチ版（Ghostscript のインスト�
 ## 更新して公開するとき
 
 - `index.html`・`js/`・`vendor/`・`icons/` を変更したら、**`sw.js` 先頭の `VERSION` を必ず上げてから** push してください。上げないと、すでに使っている人の端末に古いファイルが残り続けます
+- `index.html`・`js/`・`vendor/`・`icons/` を変更したら、**`node tools/build-local.mjs` でローカル版を作り直して一緒にコミット**してください。作り直し忘れは CI で検出します（出力は入力が同じなら毎回同じバイト列になります）
 - ローカルで確かめるときは、リポジトリのルートで `python -m http.server 8765` を起動して http://localhost:8765/ を開きます（`file://` ではワーカーが動きません）
 
 ## テスト
@@ -45,6 +48,8 @@ node tests/test.mjs     # Node 20 以降。失敗があれば終了コード 1
 ビルドの由来は npm の Provenance（okathira/ghostpdl-wasm の GitHub Actions）で確かめられます。
 
 ## 実装のメモ
+
+- **ローカル版**（`tools/build-local.mjs`）：`file://` で開いたページでは、ES モジュールの読み込み、モジュール形式のワーカー、ワーカーからの blob URL の `fetch` がいずれも使えない（Chrome で確認）。そこで、画面側のスクリプトは import/export を外して 1 つの `<script type="module">` にまとめ、ワーカーは gs.js と worker.js を連結し `import.meta.url` を `self.location.href` に置き換えたクラシック形式で blob URL から起動する。wasm は gzip して base64 で HTML に埋め込み、ワーカーの起動直後に Blob として `postMessage`（`type: 'localWasm'`）で渡し、ワーカー側で `DecompressionStream` で展開する。Google Fonts・manifest・Service Worker は使わない
 
 - **実行のしかた**：wasm のコンパイルは最初の 1 回だけ行い、Ghostscript を 1 回動かすたびに新しいインスタンスを作ります（`instantiateWasm` でコンパイル済みのモジュールを渡す）。Ghostscript は 1 回の実行で終了する作りなので、使い回すより確実で、実行後にメモリも解放されます
 - **進捗**：`-dQUIET` を付けず、標準出力の `Processing pages 1 through N.` と `Page n` からページ単位の進み具合を出しています
