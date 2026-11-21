@@ -1,0 +1,35 @@
+name: 不具合
+description: 計算・表示・動作の誤り
+labels: ["不具合"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 現象
+      description: 何が起きたか。表示された値やエラーをそのまま書く
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動き
+      description: 本来どうなるべきか
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順・入力値
+      description: 同じ結果を出すための入力と操作
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 根拠
+      description: 正しい値の出典（規格の番号・表番号、公表資料、手計算など）
+  - type: input
+    id: env
+    attributes:
+      label: 環境
+      description: 端末・ブラウザ（例：Xperia 1 VI / Chrome、Windows 11 / Edge）

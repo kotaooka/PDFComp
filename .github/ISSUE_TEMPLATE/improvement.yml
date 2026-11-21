@@ -1,0 +1,28 @@
+name: 改善
+description: 機能・使い勝手・文言の改善
+labels: ["改善"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 困っていること
+      description: いまのどこが不便か。使う場面も書く
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案
+      description: どう変えるか。案が無ければ空欄でよい
+  - type: textarea
+    id: done
+    attributes:
+      label: 完了の条件
+      description: 何ができたら閉じてよいか（確認方法）
+    validations:
+      required: true
+  - type: textarea
+    id: ref
+    attributes:
+      label: 根拠・参考
+      description: 規格、資料、ほかのツールなど
